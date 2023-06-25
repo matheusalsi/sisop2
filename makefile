@@ -2,7 +2,7 @@ PROJECT_NAME = wakeonlan.app
 
 COMPILER = g++
 
-FLAGS = -Wall --std=c++11
+FLAGS = -Wall --std=c++11 -g 
 
 LIBS = -pthread
 
