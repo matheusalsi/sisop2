@@ -5,8 +5,11 @@ WOLSubsystem::WOLSubsystem(bool manager){
 }
 
 // O subsistema só pode ser destruído APÓS ter parado!
+// Isso porque senão a thread vai tentar rodar sobre um objeto já destruído.
+// Inclusive isso causa erro de função puramente virtual: com o objeto destruído,
+// vai ser chamado o run() de WOLSubsystem
 WOLSubsystem::~WOLSubsystem(){
-    // Lançar exceção aqui?
+    // Lançar exceção caso sistema não tenha sido parado aqui?
 }
 
 bool WOLSubsystem::isManager(){
