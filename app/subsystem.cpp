@@ -22,7 +22,7 @@ void WOLSubsystem::setRunning(bool value){
 }
 
 void WOLSubsystem::start(){
-    runThread = new std::thread(&WOLSubsystem::run, this); // Apesar de chamarmos o método de "WOLSubsystem", o polimorfismo de start é considerado
+    runThread = new std::thread(&WOLSubsystem::run, this); // Apesar de chamarmos o método de "WOLSubsystem", o polimorfismo de run é considerado
 }
 
 void WOLSubsystem::stop(){

@@ -3,7 +3,6 @@
 #include <thread>
 #include <mutex>
 #include <chrono>
-#include <atomic>
 
 void discoverySubsystemThread();
 void monitoringSubsystemThread();
