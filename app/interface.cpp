@@ -7,5 +7,11 @@ void interfaceSubsystemThread(){
         std::cout << "4";
     }
 
+}
 
+void InterfaceSS::run(){
+    while(isRunning()){
+        std::cout << "Eu sou o SS da interface, rodando em paralelo!" << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
 }

@@ -1,20 +1,18 @@
-#include <iostream>
-#include <thread>
 #include "subsystems.h"
+#include <string>
 
 int main(int argc, char *argv[])
 {
 
-    // Threads dos subsistemas
-    std::thread th_discovery(discoverySubsystemThread);
-    std::thread th_monitoring(monitoringSubsystemThread);
-    std::thread th_management(managementSubsystemThread);
-    std::thread th_interface(interfaceSubsystemThread);
+    InterfaceSS interfaceSS(false);
+    interfaceSS.start();
 
-    th_discovery.join();
-    th_monitoring.join();
-    th_management.join();
-    th_interface.join();
+    // Exemplo de parada do SS por finalização da thread principal
+    std::string input;
+    std::cin >> input;
+
+    interfaceSS.stop();
+    std::cout << "Aqui está sua entrada: " << input << std::endl;
 
     return 0;
 }
