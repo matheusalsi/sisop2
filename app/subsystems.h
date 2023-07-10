@@ -50,17 +50,3 @@ class MonitoringSS : public WOLSubsystem{
 class ManagementSS : public WOLSubsystem{
 
 };
-
-// Subsistema de interface
-class InterfaceSS : public WOLSubsystem{
-
-    public:
-    InterfaceSS(bool isManager) : WOLSubsystem(isManager) {};
-
-    void run();
-    void printInterface();
-    bool readInput();
-
-
-
-};

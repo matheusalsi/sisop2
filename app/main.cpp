@@ -1,18 +1,29 @@
-#include "subsystems.h"
+#include "interface.h"
 #include <string>
+#include <signal.h>
+
+
+bool stopExecution = false;
+
+void handle_sigint(int signum){
+    stopExecution = true;
+}
 
 int main(int argc, char *argv[])
 {
 
+    // Handling de Ctrl+c
+    signal(SIGINT, handle_sigint);
+
     InterfaceSS interfaceSS(false);
     interfaceSS.start();
 
-    // Exemplo de parada do SS por finalização da thread principal
-    std::string input;
-    std::cin >> input;
+    while(!stopExecution){
+
+    }
 
     interfaceSS.stop();
-    std::cout << "Aqui está sua entrada: " << input << std::endl;
+    std::cout << "FINALIZADO!" << std::endl;
 
     return 0;
 }
