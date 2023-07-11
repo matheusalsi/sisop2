@@ -1,4 +1,6 @@
 #include "interface.h"
+#include "discovery.h"
+
 #include <string>
 #include <signal.h>
 
@@ -19,14 +21,24 @@ int main(int argc, char *argv[])
     // Handling de Ctrl+c
     signal(SIGINT, handle_sigint);
 
-    InterfaceSS interfaceSS(manager);
-    interfaceSS.start();
+    if(manager){
+        std::cout << "Eu sou o gerente!" << std::endl;
+    }
+    else{
+        std::cout << "Eu sou um participante" << std::endl;
+    }
+
+    DiscoverySS discoverySS(manager);
+    discoverySS.start();
+
+    // InterfaceSS interfaceSS(manager);
+    // interfaceSS.start();
 
     while(!stopExecution){
 
     }
-
-    interfaceSS.stop();
+    discoverySS.stop();
+    //interfaceSS.stop();
     std::cout << "FINALIZADO!" << std::endl;
 
     return 0;

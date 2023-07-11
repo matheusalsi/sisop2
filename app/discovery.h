@@ -24,4 +24,10 @@ class DiscoverySS : public WOLSubsystem{
     void stop();
     void run();
 
+    std::string getHostname();
+    std::string getMACAddress();
+
+    DiscoverySS(bool isManager) : WOLSubsystem(isManager) {};
+
+
 };

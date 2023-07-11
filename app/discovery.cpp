@@ -37,47 +37,86 @@ void DiscoverySS::run(){
     int n;
     while(isRunning()){
 
+        packet recv_packet, send_packet;
         if(isManager()){ // Server - recebe esses pacotes
-            // n = recvfrom(discoverySocketFD, buf, 256, 0, (struct sockaddr *) &discoverySocketClientAddrIn, &cli_len);
-            // if (n < 0){
-            //     throw std::runtime_error("DiscoverySS: erro com recvfrom");
-            // } 
-            // // Retorna para o cliente pacote informando que este é o manager
-            // n = sendto(discoverySocketFD, buf, strlen(buffer), 0, (const struct sockaddr *) &discoverySocketServerAddrIn, sizeof(struct sockaddr_in));
 
-            // // Fica esperando para ver se o cliente enviou pacote de saída
+            // Fica esperando para ver se o cliente enviou pacote de saída
+            n = recvfrom(discoverySocketFD, &recv_packet, sizeof(packet), 0, (struct sockaddr *) &discoverySocketClientAddrIn, &cli_len);
+            if (n < 0){ 
+                throw std::runtime_error("DiscoverySS: erro com recvfrom");
+            } 
+
+            // Checa o tipo de pacote: Adicionar ao sistema ou retirar do sistema
+            if(recv_packet.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND)){
+                send_packet.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND | ACKNOWLEDGE;
+                // Retorna para o cliente pacote informando que este é o manager
+                n = sendto(discoverySocketFD, &send_packet, sizeof(packet), 0, (const struct sockaddr *) &discoverySocketServerAddrIn, sizeof(struct sockaddr_in));
+    
+            }
+            else if(recv_packet.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT)){ // Exit
+                std::cout << "AWDWADWADWADWA" << std::endl;
+            }
+            
+            char buffer[INET_ADDRSTRLEN];
+            inet_ntop( AF_INET, &discoverySocketClientAddrIn.sin_addr, buffer, sizeof( buffer ));
+            std::cout << buffer << std::endl;
+
+            
 
     
         }
         else{ // Client - envia esses pacotes
             // Checa se já foi encontrado um manager
-            // if(foundManager){ // Verifica se é necessário mandar packet informando saída do sistema
-            //     continue;
-            // }
-            // else{ // Busca o manager
-            //     std::thread packetSenderThread(DiscoverySS::sendSleepDiscoverPackets, this);
-            //     n = recvfrom(discoverySocketFD, buf, 256, 0, (struct sockaddr *) &discoverySocketClientAddrIn, &cli_len);
-            //     foundManager = true; // Seta como true, acaba encerrando a thread "packet sender"
-            //     packetSenderThread.join(); // Espera a thread encerrar
+            if(foundManager){ // Verifica se é necessário mandar packet informando saída do sistema
+                continue;
+            }
+            else{ // Busca o manager
+                std::thread packetSenderThread(&DiscoverySS::sendSleepDiscoverPackets, this);
+                
+                while(true){
+                    n = recvfrom(discoverySocketFD, &recv_packet, sizeof(packet), 0, (struct sockaddr *) &discoverySocketClientAddrIn, &cli_len);
+                    // Checa se é resposta do manager
+                    if(recv_packet.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND | ACKNOWLEDGE)){
+                        break;
+                    }
+                }
 
-            //     // ENVIA INFORMAÇÕES DO MANAGER PARA O BIRIRIRI
+                foundManager = true; // Seta como true, acaba encerrando a thread "packet sender"
+                packetSenderThread.join(); // Espera a thread encerrar
 
-            // }
+                // ENVIA INFORMAÇÕES DO MANAGER PARA O BIRIRIRI
+                char buffer[INET_ADDRSTRLEN];
+                inet_ntop( AF_INET, &discoverySocketClientAddrIn.sin_addr, buffer, sizeof( buffer ));
+                std::cout << buffer << std::endl;
+
+            }
 
         }
 
     }
 };
 
-// void DiscoverySS::sendSleepDiscoverPackets(){
-//     int n;
-//     // Manda o pacote de discovery enquanto não recebe confirmação
-//     while(!foundManager){
-//         n = sendto(discoverySocketFD, buffer, strlen(buffer), 0, (const struct sockaddr *) &discoverySocketServerAddrIn, sizeof(struct sockaddr_in));
-//         if (n < 0){
-//             throw std::runtime_error("DiscoverySS: erro com sendto");
-//         }
-//         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-//     }
+void DiscoverySS::sendSleepDiscoverPackets(){
+    int n;
 
-// }
+    packet send_packet;
+    send_packet.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND;
+
+    // Manda o pacote de discovery enquanto não recebe confirmação
+    while(!foundManager){
+        n = sendto(discoverySocketFD, &send_packet, sizeof(packet), 0, (const struct sockaddr *) &discoverySocketServerAddrIn, sizeof(struct sockaddr_in));
+        if (n < 0){
+            throw std::runtime_error("DiscoverySS: erro com sendto");
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+}
+
+std::string DiscoverySS::getHostname(){
+    return std::string("TESTE");
+}
+
+std::string DiscoverySS::getMACAddress(){
+    return std::string("00:00:00:00:00:00");
+}

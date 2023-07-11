@@ -1,3 +1,7 @@
+#ifndef SUBSYSTEMS_H
+#define SUBSYSTEMS_H
+
+
 #include <iostream>
 #include <vector>
 #include <thread>
@@ -7,7 +11,10 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <netdb.h>
+#include <arpa/inet.h>
 #include <strings.h>
+
+#include "packet.h"
 
 void discoverySubsystemThread();
 void monitoringSubsystemThread();
@@ -51,3 +58,5 @@ class MonitoringSS : public WOLSubsystem{
 class ManagementSS : public WOLSubsystem{
 
 };
+
+#endif
