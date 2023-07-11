@@ -1,6 +1,8 @@
 #ifndef SUBSYSTEMS_H
 #define SUBSYSTEMS_H
 
+#define DEBUG
+
 
 #include <iostream>
 #include <vector>

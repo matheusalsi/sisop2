@@ -26,6 +26,8 @@ void DiscoverySS::start(){
     cli_len = sizeof(struct sockaddr_in);
     foundManager = false;
 
+    WOLSubsystem::start();
+
 }
 
 void DiscoverySS::stop(){
@@ -40,15 +42,29 @@ void DiscoverySS::run(){
         packet recv_packet, send_packet;
         if(isManager()){ // Server - recebe esses pacotes
 
+            #ifdef DEBUG
+            std::cout << "Estou esperando um packet em " << DISCOVERY_PORT << std::endl;
+            #endif
+
             // Fica esperando para ver se o cliente enviou pacote de saída
             n = recvfrom(discoverySocketFD, &recv_packet, sizeof(packet), 0, (struct sockaddr *) &discoverySocketClientAddrIn, &cli_len);
             if (n < 0){ 
                 throw std::runtime_error("DiscoverySS: erro com recvfrom");
-            } 
+            }
+
+            #ifdef DEBUG
+            std::cout << "Recebi um pacote!" << std::endl;
+            #endif
 
             // Checa o tipo de pacote: Adicionar ao sistema ou retirar do sistema
             if(recv_packet.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND)){
                 send_packet.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND | ACKNOWLEDGE;
+                
+
+                #ifdef DEBUG
+                std::cout << "Estou respondendo o cliente" << std::endl;
+                #endif
+                
                 // Retorna para o cliente pacote informando que este é o manager
                 n = sendto(discoverySocketFD, &send_packet, sizeof(packet), 0, (const struct sockaddr *) &discoverySocketServerAddrIn, sizeof(struct sockaddr_in));
     
@@ -104,7 +120,7 @@ void DiscoverySS::sendSleepDiscoverPackets(){
 
     // Manda o pacote de discovery enquanto não recebe confirmação
     while(!foundManager && isRunning()){
-        n = sendto(discoverySocketFD, &send_packet, sizeof(packet), 0, (const struct sockaddr *) &discoverySocketServerAddrIn, sizeof(struct sockaddr_in));
+        n = sendto(discoverySocketFD, &send_packet, sizeof(packet), 0, (const struct sockaddr *) &discoverySocketServerAddrIn, sizeof(struct sockaddr_in) < 0);
         if (n < 0){
             throw std::runtime_error("DiscoverySS: erro com sendto");
         }
