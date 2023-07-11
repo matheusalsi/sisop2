@@ -9,13 +9,17 @@ void handle_sigint(int signum){
     stopExecution = true;
 }
 
+bool isManager(int argc){
+    return argc == 2;
+}
+
 int main(int argc, char *argv[])
 {
-
+    bool manager = isManager(argc);
     // Handling de Ctrl+c
     signal(SIGINT, handle_sigint);
 
-    InterfaceSS interfaceSS(false);
+    InterfaceSS interfaceSS(manager);
     interfaceSS.start();
 
     while(!stopExecution){

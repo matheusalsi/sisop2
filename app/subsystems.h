@@ -3,6 +3,11 @@
 #include <thread>
 #include <mutex>
 #include <chrono>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <netdb.h>
+#include <strings.h>
 
 void discoverySubsystemThread();
 void monitoringSubsystemThread();
@@ -18,6 +23,7 @@ class WOLSubsystem{
     std::thread* runThread; // thread principal do SS
 
     bool running; // define se o SS está rodando. Caso não esteja, threads devem parar de rodar
+
     void setRunning(bool value);
     
 
@@ -33,11 +39,6 @@ class WOLSubsystem{
     virtual void start(); // Inicializa execução do subsistema
     virtual void stop(); // Encerra execução do subsistema
 
-
-};
-
-// Subsistema de descoberta
-class DiscoverySS : public WOLSubsystem{
 
 };
 
