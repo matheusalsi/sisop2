@@ -1,7 +1,7 @@
 #include "discovery.h"
 
 void DiscoverySS::start(){
-    if(discoverySocketFD = socket(AF_INET, SOCK_DGRAM, 0) == -1){
+    if((discoverySocketFD = socket(AF_INET, SOCK_DGRAM, 0)) == -1){
         throw std::runtime_error("DiscoverySS: não foi possível obter socket");
     }
 
@@ -103,7 +103,7 @@ void DiscoverySS::sendSleepDiscoverPackets(){
     send_packet.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND;
 
     // Manda o pacote de discovery enquanto não recebe confirmação
-    while(!foundManager){
+    while(!foundManager && isRunning()){
         n = sendto(discoverySocketFD, &send_packet, sizeof(packet), 0, (const struct sockaddr *) &discoverySocketServerAddrIn, sizeof(struct sockaddr_in));
         if (n < 0){
             throw std::runtime_error("DiscoverySS: erro com sendto");
