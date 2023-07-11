@@ -5,22 +5,21 @@ void DiscoverySS::start(){
         throw std::runtime_error("DiscoverySS: não foi possível obter socket");
     }
 
+    discoverySocketServerAddrIn.sin_family = AF_INET;
+    discoverySocketServerAddrIn.sin_port = htons(DISCOVERY_PORT);
+    discoverySocketServerAddrIn.sin_addr.s_addr = INADDR_ANY;
+
+    discoverySocketClientAddrIn.sin_family = AF_INET;
+    discoverySocketClientAddrIn.sin_port = htons(DISCOVERY_PORT);
+    discoverySocketClientAddrIn.sin_addr.s_addr = INADDR_BROADCAST;
 
     if(isManager()){ // Server
-        discoverySocketServerAddrIn.sin_family = AF_INET;
-        discoverySocketServerAddrIn.sin_port = htons(DISCOVERY_PORT);
-        discoverySocketServerAddrIn.sin_addr.s_addr = INADDR_ANY;
         bzero(&(discoverySocketServerAddrIn.sin_zero), 8);
 
         if (bind(discoverySocketFD, (struct sockaddr *) &discoverySocketServerAddrIn, sizeof(struct sockaddr)) < 0){
             throw std::runtime_error("DiscoverySS: erro com o bind do socket");
         } 
 
-    }
-    else{ // Client
-        discoverySocketServerAddrIn.sin_family = AF_INET;
-        discoverySocketServerAddrIn.sin_port = htons(DISCOVERY_PORT);
-        discoverySocketServerAddrIn.sin_addr.s_addr = INADDR_BROADCAST;
     }
 
     cli_len = sizeof(struct sockaddr_in);
@@ -120,7 +119,11 @@ void DiscoverySS::sendSleepDiscoverPackets(){
 
     // Manda o pacote de discovery enquanto não recebe confirmação
     while(!foundManager && isRunning()){
-        n = sendto(discoverySocketFD, &send_packet, sizeof(packet), 0, (const struct sockaddr *) &discoverySocketServerAddrIn, sizeof(struct sockaddr_in) < 0);
+        #ifdef DEBUG
+        std::cout << "Enviando packet de procura..."<< std::endl;
+        #endif
+
+        n = sendto(discoverySocketFD, &send_packet, sizeof(packet), 0, (const struct sockaddr *) &discoverySocketServerAddrIn, sizeof(struct sockaddr_in));
         if (n < 0){
             throw std::runtime_error("DiscoverySS: erro com sendto");
         }
