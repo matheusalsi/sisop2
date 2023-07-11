@@ -1,7 +1,7 @@
 #include "discovery.h"
 
 void DiscoverySS::start(){
-    if(discoverySocketFD = socket(AF_INET, SOCK_DGRAM, 0)){
+    if(discoverySocketFD = socket(AF_INET, SOCK_DGRAM, 0) == -1){
         throw std::runtime_error("DiscoverySS: não foi possível obter socket");
     }
 
