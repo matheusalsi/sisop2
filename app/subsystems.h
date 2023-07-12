@@ -16,6 +16,8 @@
 #include <arpa/inet.h>
 #include <strings.h>
 
+
+#include "socket.h"
 #include "packet.h"
 
 void discoverySubsystemThread();

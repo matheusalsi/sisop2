@@ -1,3 +1,6 @@
+#ifndef PACKET_H
+#define PACKET_H
+
 #define ACKNOWLEDGE 0b0001
 #define SLEEP_SERVICE_DISCOVERY 0b0100
 #define SLEEP_SERVICE_DISCOVERY_FIND 0b0000
@@ -16,3 +19,5 @@ typedef struct packet{
     const char* _payload; //Dados da mensagem
 
 } packet;
+
+#endif 

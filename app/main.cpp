@@ -7,7 +7,7 @@
 
 bool stopExecution = false;
 
-void handle_sigint(int signum){
+void handleSigint(int signum){
     stopExecution = true;
 }
 
@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
 {
     bool manager = isManager(argc);
     // Handling de Ctrl+c
-    signal(SIGINT, handle_sigint);
+    signal(SIGINT, handleSigint);
 
     if(manager){
         std::cout << "Eu sou o gerente!" << std::endl;
