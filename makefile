@@ -10,10 +10,12 @@ MAIN = app/main.cpp
 
 SRCS = $(shell find ./app -iname "*.cpp")
 
+HEADERS = $(shell find ./app -iname "*.h")
+
 all: $(PROJECT_NAME)
 	@echo Project compiled
 
-$(PROJECT_NAME): $(MAIN)
+$(PROJECT_NAME): $(MAIN) $(SRCS) $(HEADERS)
 	$(COMPILER) $(FLAGS) -o $(PROJECT_NAME) $(SRCS) $(LIBS)
 	
 runclient: $(PROJECT_NAME)
@@ -23,7 +25,7 @@ runmanager: $(PROJECT_NAME)
 	./$(PROJECT_NAME) manager
 
 clean:
-	rm -rf *.o main $(PROJECT_NAME)
+	rm -f *.o main $(PROJECT_NAME)
 
 manager: clean all runmanager
 
