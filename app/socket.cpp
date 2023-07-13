@@ -7,7 +7,7 @@ Socket::Socket(int port, bool debug=false){
 
 void Socket::openSocket(){
     createSocket();
-    setServerInfo();
+    setServerBindInfo();
 }
 
 void Socket::closeSocket(){
@@ -30,11 +30,15 @@ void Socket::createSocket(){
     }
 }
 
+int Socket::getSocketDescriptor(){
+    return socketFD;
+}
+
 // Configura as informações do servidor
-void Socket::setServerInfo(){
+void Socket::setServerBindInfo(){
     serverAddrIn.sin_family = AF_INET;
     serverAddrIn.sin_port = htons(port);
-    serverAddrIn.sin_addr.s_addr = debug ? htonl(INADDR_LOOPBACK) : INADDR_ANY;
+    serverAddrIn.sin_addr.s_addr = debug ? htonl(INADDR_LOOPBACK) : INADDR_ANY; // Endereço utilizado para bind
     serverLen = sizeof(struct sockaddr_in);
 }
 
@@ -68,7 +72,17 @@ void Socket::sendPacketToClient(struct packet* sendPacketServer, struct sockaddr
     }
 }
 
-void Socket::sendPacketToServer(struct packet* sendPacketClient){
+void Socket::sendPacketToServer(struct packet* sendPacketClient, int type, struct hostent* server){
+    if (type == BROADCAST){
+        serverAddrIn.sin_addr.s_addr = INADDR_BROADCAST;
+    }
+    else if (type == LOOPBACK){
+        serverAddrIn.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    }
+    else if (type == TO_SERVER){
+       serverAddrIn.sin_addr = *((struct in_addr *)server->h_addr);
+    }
+    
     int n = sendto(socketFD, sendPacketClient, sizeof(struct packet), 0, (const struct sockaddr *) &serverAddrIn, sizeof(struct sockaddr_in));
     if (n < 0){
         std::string errorMsg = "Erro ao enviar um pacote para o cliente na porta " + std::to_string(port);

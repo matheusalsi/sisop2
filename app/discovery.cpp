@@ -1,20 +1,20 @@
 #include "discovery.h"
 
 void DiscoverySS::start(){
-    socket.openSocket();
+    discoverySocket.openSocket();
 
     if(isManager()){ // Server
-        socket.bindSocket();
+        discoverySocket.bindSocket();
     }
     else{ // Client
-        socket.setSocketBroadcastToTrue(); // precisa?
+        discoverySocket.setSocketBroadcastToTrue(); // precisa?
     }
     foundManager = false;
     WOLSubsystem::start();
 }
 
 void DiscoverySS::stop(){
-    socket.closeSocket();
+    discoverySocket.closeSocket();
 }
 
 
@@ -28,7 +28,7 @@ void DiscoverySS::run(){
 
             // Fica esperando por pacotes de algum cliente
             sockaddr_in clientAddrIn;
-            clientAddrIn = socket.receivePacketFromClients(&recvPacket);
+            clientAddrIn = discoverySocket.receivePacketFromClients(&recvPacket);
 
             #ifdef DEBUG
             char buffer[INET_ADDRSTRLEN];
@@ -47,7 +47,7 @@ void DiscoverySS::run(){
                 // Retorna para o cliente pacote informando que este é o manager
                 sendPacket.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND | ACKNOWLEDGE;
                 
-                socket.sendPacketToClient(&sendPacket, clientAddrIn);
+                discoverySocket.sendPacketToClient(&sendPacket, clientAddrIn);
     
             }
             else if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT)){ // Exit
@@ -68,9 +68,10 @@ void DiscoverySS::run(){
 
 
                 while(true){
-                    socket.receivePacketFromServer(&recvPacket);
+                    discoverySocket.receivePacketFromServer(&recvPacket);
                     // Checa se é resposta do manager
                     if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND | ACKNOWLEDGE)){
+                        std::cout << "Recebi um pacote do manager!" << std::endl;
                         break;
                     }
 
@@ -87,7 +88,7 @@ void DiscoverySS::run(){
 
                 #ifdef DEBUG
                 char buffer[INET_ADDRSTRLEN];
-                struct in_addr serverBinaryNetworkAddr = socket.getServerBinaryNetworkAddress();
+                struct in_addr serverBinaryNetworkAddr = discoverySocket.getServerBinaryNetworkAddress();
                 inet_ntop( AF_INET, &serverBinaryNetworkAddr, buffer, sizeof( buffer ));
                 std::cout << "Recebi um pacote do gerenciador " << "(" << buffer << ")" << "!" << std::endl;
                 #endif
@@ -113,9 +114,10 @@ void DiscoverySS::sendSleepDiscoverPackets(){
         #ifdef DEBUG
         std::cout << "Enviando packet de procura..."<< std::endl;
         #endif
-        socket.sendPacketToServer(&sendPacket);
+        discoverySocket.sendPacketToServer(&sendPacket, LOOPBACK, NULL);
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
+
 
 }
 

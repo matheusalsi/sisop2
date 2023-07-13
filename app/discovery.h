@@ -5,7 +5,8 @@
 class DiscoverySS : public WOLSubsystem{
 
     private:
-    Socket socket; // Socket para envio/recepção de packets "Sleep Service Discovery"
+
+    Socket discoverySocket; // Socket para envio/recepção de packets "Sleep Service Discovery"
 
     std::string hostname;
     std::string macaddress;
@@ -29,10 +30,8 @@ class DiscoverySS : public WOLSubsystem{
 
     DiscoverySS(bool isManager) : 
     WOLSubsystem(isManager),
-    socket(DISCOVERY_PORT, true),
+    discoverySocket(DISCOVERY_PORT, true),
     hostname(""),
     macaddress("")
     {};
-
-
 };

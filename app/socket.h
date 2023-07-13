@@ -8,10 +8,16 @@
 #include <netdb.h>
 #include <strings.h>
 #include <arpa/inet.h>
+#include <sys/ioctl.h>
+#include <linux/if.h>
+#include <string.h>
 #include "packet.h"
 
+#define BROADCAST 1
+#define TO_SERVER 2
+#define LOOPBACK 3
 
-//
+
 class Socket{
     private:
 
@@ -25,8 +31,9 @@ class Socket{
     bool debug;
 
     void createSocket();
-    void setServerInfo();
+    void setServerBindInfo();
     void setLastClientInfo(struct sockaddr_in);
+    void setServerAddressInfo(int inadrr);
 
     public:
 
@@ -37,10 +44,11 @@ class Socket{
     void bindSocket();
     void setSocketBroadcastToTrue();
     void setSocketBroadcastToFalse();
+    int getSocketDescriptor();
 
     void sendPacketToClient(struct packet* sendPacketServer, struct sockaddr_in clientAddrIn);
     void sendPacketToLastSeenClient(struct packet* sendPacketServer);
-    void sendPacketToServer(struct packet* sendPacketClient);
+    void sendPacketToServer(struct packet* sendPacketClient, int type, struct hostent* serverAddrIn);
     struct sockaddr_in receivePacketFromClients(struct packet* recvPacketServer);
     void receivePacketFromServer(struct packet* recvPacketClient);
     struct in_addr getServerBinaryNetworkAddress();
