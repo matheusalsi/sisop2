@@ -119,10 +119,18 @@ void DiscoverySS::sendSleepDiscoverPackets(){
 
 }
 
+void DiscoverySS::setHostname(std::string &hostname){
+    this->hostname = hostname;
+}
+
+void DiscoverySS::setMACAddress(std::string& macaddress){
+    this->macaddress = macaddress;
+}
+
 std::string DiscoverySS::getHostname(){
-    return std::string("TESTE");
+    return hostname;
 }
 
 std::string DiscoverySS::getMACAddress(){
-    return std::string("00:00:00:00:00:00");
+    return macaddress;
 }
