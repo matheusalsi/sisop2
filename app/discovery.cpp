@@ -7,7 +7,7 @@ void DiscoverySS::start(){
         discoverySocket.bindSocket();
     }
     else{ // Client
-        discoverySocket.setSocketBroadcastToTrue(); // precisa?
+        discoverySocket.setSocketBroadcastToTrue(); 
     }
     foundManager = false;
     WOLSubsystem::start();
@@ -114,7 +114,7 @@ void DiscoverySS::sendSleepDiscoverPackets(){
         #ifdef DEBUG
         std::cout << "Enviando packet de procura..."<< std::endl;
         #endif
-        discoverySocket.sendPacketToServer(&sendPacket, LOOPBACK, NULL);
+        discoverySocket.sendPacketToServer(&sendPacket, BROADCAST, NULL);
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
 

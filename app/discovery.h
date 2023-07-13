@@ -30,7 +30,7 @@ class DiscoverySS : public WOLSubsystem{
 
     DiscoverySS(bool isManager) : 
     WOLSubsystem(isManager),
-    discoverySocket(DISCOVERY_PORT, true),
+    discoverySocket(DISCOVERY_PORT, false),
     hostname(""),
     macaddress("")
     {};

@@ -13,8 +13,8 @@
 #include <string.h>
 #include "packet.h"
 
-#define BROADCAST 1
-#define TO_SERVER 2
+#define BROADCAST 1 
+#define DIRECT_TO_SERVER 2
 #define LOOPBACK 3
 
 
@@ -33,7 +33,6 @@ class Socket{
     void createSocket();
     void setServerBindInfo();
     void setLastClientInfo(struct sockaddr_in);
-    void setServerAddressInfo(int inadrr);
 
     public:
 

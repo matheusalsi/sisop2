@@ -2,9 +2,10 @@
 
 Socket::Socket(int port, bool debug=false){
     this->port = port;
-    this->debug = debug;
+    this->debug = debug; // Utilizado para testar na mesma máquina passando pacotes em LOOPBACK
 };
 
+// Cria um socket, e define as informações que serão utilizadas para bindar o servidor na porta 
 void Socket::openSocket(){
     createSocket();
     setServerBindInfo();
@@ -14,7 +15,7 @@ void Socket::closeSocket(){
     close(this->socketFD);
 }
 
-
+// Binda o servidor na porta especificada
 void Socket::bindSocket(){
     bzero(&(serverAddrIn.sin_zero), 8);
     if (bind(socketFD, (struct sockaddr *) &serverAddrIn, sizeof(struct sockaddr)) < 0){
@@ -48,6 +49,7 @@ void Socket::setLastClientInfo(struct sockaddr_in clientAddrIn){
     this->lastClientLen = sizeof(clientAddrIn);
 }
 
+// Define que o socket irá receber pacotes em broadcast. Utilizado pelos clientes
 void Socket::setSocketBroadcastToTrue(){
     int yes = 1;
     setsockopt(socketFD, SOL_SOCKET, SO_BROADCAST, (char*)&yes, sizeof(yes));
@@ -64,6 +66,9 @@ struct in_addr Socket::getServerBinaryNetworkAddress(){
 
 // FUNÇÕES DE TROCAS DE PACOTES
 
+// SERVIDOR
+
+// Envia um pacote para um cliente
 void Socket::sendPacketToClient(struct packet* sendPacketServer, struct sockaddr_in clientAddrIn){
     int n = sendto(socketFD, sendPacketServer, sizeof(struct packet), 0, (const struct sockaddr *) &clientAddrIn, sizeof(struct sockaddr_in));
     if (n < 0){
@@ -72,6 +77,23 @@ void Socket::sendPacketToClient(struct packet* sendPacketServer, struct sockaddr
     }
 }
 
+
+// Recebe um pacote de um cliente e retorna as informações do cliente que enviou o pacote
+struct sockaddr_in Socket::receivePacketFromClients(struct packet* recvPacketServer){
+    sockaddr_in clientAddrIn;
+    socklen_t clientLen = sizeof(clientAddrIn);
+    int n = recvfrom(socketFD, recvPacketServer, sizeof(struct packet), 0, (struct sockaddr *) &clientAddrIn, &clientLen);
+    if (n < 0){
+        std::string errorMsg = "Erro ao receber um pacote do cliente na porta " + std::to_string(port);
+        throw std::runtime_error(errorMsg);
+    }
+    return clientAddrIn;
+
+} 
+
+// CLIENTE
+
+// Envia um pacote para o servidor, e especificando o tipo de envio
 void Socket::sendPacketToServer(struct packet* sendPacketClient, int type, struct hostent* server){
     if (type == BROADCAST){
         serverAddrIn.sin_addr.s_addr = INADDR_BROADCAST;
@@ -79,7 +101,11 @@ void Socket::sendPacketToServer(struct packet* sendPacketClient, int type, struc
     else if (type == LOOPBACK){
         serverAddrIn.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     }
-    else if (type == TO_SERVER){
+    else if (type == DIRECT_TO_SERVER){
+        if (server == NULL){
+            std::string errorMsg = "Erro: Servidor não definido na porta " + std::to_string(port);
+            throw std::runtime_error(errorMsg);
+        }
        serverAddrIn.sin_addr = *((struct in_addr *)server->h_addr);
     }
     
@@ -90,20 +116,7 @@ void Socket::sendPacketToServer(struct packet* sendPacketClient, int type, struc
     }
 }
 
-// Recebe um pacote de um cliente e retorna a estrutura do endereço do cliente que enviou esse pacote
-struct sockaddr_in Socket::receivePacketFromClients(struct packet* recvPacketServer){
-    sockaddr_in clientAddrIn;
-    socklen_t clientLen = sizeof(clientAddrIn);
-    int n = recvfrom(socketFD, recvPacketServer, sizeof(struct packet), 0, (struct sockaddr *) &clientAddrIn, &clientLen);
-    if (n < 0){
-        std::string errorMsg = "Erro ao receber um pacote do cliente na porta " + std::to_string(port);
-        throw std::runtime_error(errorMsg);
-    }
-    return clientAddrIn;
-}
-
 // Envia um pacote para o último cliente que enviou um pacote para o servidor
-// Eu não sei dizer ainda se ela tem o comportamento esperado considerando que são múltiplos clientes, mas vou testar depois
 void Socket::sendPacketToLastSeenClient(struct packet* sendPacketServer){
     int n = sendto(socketFD, sendPacketServer, sizeof(struct packet), 0, (const struct sockaddr *) &lastClientAddrIn, sizeof(struct sockaddr_in));
     if (n < 0){
@@ -112,6 +125,7 @@ void Socket::sendPacketToLastSeenClient(struct packet* sendPacketServer){
     }
 }
 
+// Recebe um pacote do servidor
 void Socket::receivePacketFromServer(struct packet* recvPacketClient){
     int n = recvfrom(socketFD, recvPacketClient, sizeof(struct packet), 0, (struct sockaddr *) &serverAddrIn, &serverLen);
     if (n < 0){
