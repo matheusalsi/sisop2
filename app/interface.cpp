@@ -71,15 +71,32 @@ void WOLTable::updateLineStatus(std::string ipaddr, bool awake){
 }
 
 
-void InterfaceSS::run(){
-    bool b = true;
-    while(isRunning()){
-        printInterface();
+void InterfaceSS::userInputInterface(){
+    std::string input;
 
-        // Exemplo
-        table.addLine("1.1.1.1", "01:01:01:01:01:01", "teste");
-        table.updateLineStatus("1.1.1.1", b);
-        b = !b;
+    std::cout << "Digite o comando: " << std::endl;
+    std::cin >> input;
+
+    if (input == "WAKEUP" && isManager())
+        ; // parsear para WAKEONLAN
+    else if (input == "EXIT" && !isManager()){
+        mailBox.writeMessage("D_IN", input);
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        setRunning(false); // Interface encerra a execução do participante
+    }
+    
+}
+
+void InterfaceSS::run(){
+    // bool b = true;
+    while(isRunning()){
+        userInputInterface();
+        // printInterface();
+
+        // // Exemplo
+        // table.addLine("1.1.1.1", "01:01:01:01:01:01", "teste");
+        // table.updateLineStatus("1.1.1.1", b);
+        // b = !b;
         
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }

@@ -9,7 +9,6 @@ void DiscoverySS::start(){
     else{ // Client
         discoverySocket.setSocketBroadcastToTrue(); 
     }
-    foundManager = false;
     WOLSubsystem::start();
 }
 
@@ -19,9 +18,25 @@ void DiscoverySS::stop(){
 
 
 void DiscoverySS::run(){
+    if (isManager()){ // Manda suas informações para salvar na tabela
+        std::string message;
+        char ipStr[INET_ADDRSTRLEN];
+        in_addr ip = discoverySocket.getServerBinaryNetworkAddress();
+        inet_ntop(AF_INET, &ip, ipStr, INET_ADDRSTRLEN);
+        message.append("ADD_MANAGER");
+        message.append("&");
+        message.append(ipStr);
+        message.append("&");
+        message.append(getHostname());
+        message.append("&");
+        message.append(getMACAddress());
+        mailBox.writeMessage("M_IN", message);
+    }
+
     while(isRunning()){
         packet recvPacket, sendPacket;
-        if(isManager()){ // Server - recebe esses pacotes
+        if(isManager()){ // Server - os pacotes de sleep service discovery e sleep service exit
+
             #ifdef DEBUG
             std::cout << "Estou esperando um packet em " << DISCOVERY_PORT << std::endl;
             #endif
@@ -38,80 +53,111 @@ void DiscoverySS::run(){
 
             // Checa o tipo de pacote: Adicionar ao sistema ou retirar do sistema
             if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND)){
-                
+                // std::string macAndHostname;
+                // macAndHostname = recvPacket._payload;
 
                 #ifdef DEBUG
-                std::cout << "Estou respondendo o cliente" << std::endl;
+                std::cout << "Estou respondendo o cliente " << buffer << " que quer entrar" << std::endl;
                 #endif
                 
                 // Retorna para o cliente pacote informando que este é o manager
                 sendPacket.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND | ACKNOWLEDGE;
-                
                 discoverySocket.sendPacketToClient(&sendPacket, clientAddrIn);
-    
+
+                // Envia mensagem para o gerenciamento para adicionar o cliente à tabela
+                std::string message;
+                char ipStr[INET_ADDRSTRLEN];
+                inet_ntop(AF_INET, &clientAddrIn.sin_addr, ipStr, INET_ADDRSTRLEN);
+                message.append("ADD_CLIENT");
+                message.append("&");
+                message.append(ipStr);
+                message.append("&");
+                // message.append(macAndHostname);
+                // message.append("&");
+                message.append(std::to_string(clientAddrIn.sin_port));
+                mailBox.writeMessage("M_IN", message);
             }
-            else if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT)){ // Exit
-                std::cout << "AWDWADWADWADWA" << std::endl;
+
+            else if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT)){ 
+                #ifdef DEBUG
+                std::cout << "Estou respondendo o cliente " << buffer << " que quer sair" << std::endl;
+                #endif
+                
+                // Retorna para o cliente pacote confirmando que ele recebeu o pacote de descoberta
+                sendPacket.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT | ACKNOWLEDGE;
+                discoverySocket.sendPacketToClient(&sendPacket, clientAddrIn);
+
+                // Envia mensagem para o gerenciamento para remover o cliente da tabela
+                std::string messageExit;
+                char ipStr[INET_ADDRSTRLEN];
+                inet_ntop(AF_INET, &clientAddrIn.sin_addr, ipStr, INET_ADDRSTRLEN);
+                messageExit.append("REMOVE_CLIENT");
+                messageExit.append("&");
+                messageExit.append(ipStr);
+                messageExit.append("&");
+                messageExit.append(std::to_string(clientAddrIn.sin_port));
+                mailBox.writeMessage("M_IN", messageExit);
             }
     
         }
-        else{ // Client - envia esses pacotes
-            // Checa se já foi encontrado um manager
-            if(foundManager){ // Verifica se é necessário mandar packet informando saída do sistema
-                continue;
-            }
-            else{ // Busca o manager
-                // Thread que envia packets ao servidor
-                std::thread packetSenderThread(&DiscoverySS::sendSleepDiscoverPackets, this);
-                
+        else{ // Client - envia os pacotes de sleep service discovery e sleep service exit
+            sockaddr_in serverAddrIn;
+            if(foundManager && !hasLeft){ // Verifica se é necessário mandar packet informando saída do sistema
+
+                while (mailBox.isEmpty("I_OUT")){ // Espera chegar alguma mensagem na caixa de mensagens
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                }
+                std::string messageInterfaceLeave;
+                mailBox.readMessage("I_OUT", messageInterfaceLeave);
+
+                std::cout << "Mensagem de INTERFACE: " << messageInterfaceLeave << std::endl; 
+
+                // O cliente já sabe qual o endereço do servidor
+                discoverySocket.setSocketBroadcastToFalse(); 
+
+                // Envia pacote em outra thread informando que o cliente está saindo
+                std::thread packetSenderThreadExit(&DiscoverySS::sendSleepExitPackets, this, serverAddrIn);
+
                 // Espera resposta do servidor
+                discoverySocket.receivePacketFromServer(&recvPacket);
 
-
-                while(true){
-                    discoverySocket.receivePacketFromServer(&recvPacket);
-                    // Checa se é resposta do manager
-                    if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND | ACKNOWLEDGE)){
-                        std::cout << "Recebi um pacote do manager!" << std::endl;
-                        break;
-                    }
-
-                    // Eu creio que esse caso não tem como acontecer? 
-                    // Porque a gente tem salvo as informações do servidor e elas não vão mudar
-                    // E não tem como um participante mandar um pacote pra um IP além do IP do servidor nessa porta
-
-                    // #ifdef DEBUG
-                    // char buffer[INET_ADDRSTRLEN];
-                    // inet_ntop( AF_INET, &from.sin_addr, buffer, sizeof( buffer ));
-                    // std::cout << "Recebi packet de " << buffer << ", mas não é o manager!";
-                    // #endif
+                // Checa se é resposta do manager
+                if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT | ACKNOWLEDGE)){
+                    std::cout << "Recebi um pacote do manager de confirmação da saída!" << std::endl;
                 }
 
-                foundManager = true; // Seta como true, acaba encerrando a thread "packet sender"
-                packetSenderThread.join(); // Espera a thread encerrar
+                hasLeft = true; // Seta como true, acaba encerrando a thread "packet sender"
+                packetSenderThreadExit.join(); // Espera a thread encerrar
 
-                // Manda informações do manager para ser guardado na tabela
-                std::string message;
-                char str[INET_ADDRSTRLEN];
-                in_addr ip = discoverySocket.getServerBinaryNetworkAddress();
-                inet_ntop(AF_INET, &ip, str, INET_ADDRSTRLEN);
-                message.append(str);
-                message.append("&");
-                message.append(getHostname());
-                message.append("&");
-                message.append(getMACAddress());
-                
-                mailBox.writeMessage("M_IN", message);
-
+                // Avisa para a interface que o cliente foi removido
+                // std::string messageTableRemoved;
+                // messageTableRemoved.append("I_WAS_REMOVED");
+                // mailBox.writeMessage("I_IN", messageTableRemoved);
             }
+            else if (!hasLeft){ // Busca o manager
+                std::thread packetSenderThreadDiscover(&DiscoverySS::sendSleepDiscoverPackets, this);
+                
+                // Espera resposta do servidor
+                serverAddrIn = discoverySocket.receivePacketFromServer(&recvPacket);
 
+                // Checa se é resposta do manager
+                if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND | ACKNOWLEDGE)){
+                    std::cout << "Recebi um pacote do manager de confirmação que eu entrei!" << std::endl;
+                }
+                
+                foundManager = true; // Seta como true, acaba encerrando a thread "packet sender"
+                packetSenderThreadDiscover.join(); // Espera a thread encerrar
+            }
         }
-
     }
 };
 
 void DiscoverySS::sendSleepDiscoverPackets(){
     packet sendPacket;
     sendPacket.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND;
+
+    std::string packetPayload = getHostname() + "&" + getMACAddress();
+    sendPacket._payload = packetPayload.c_str();
 
     // Manda o pacote de discovery enquanto não recebe confirmação
     while(!foundManager && isRunning()){
@@ -121,7 +167,19 @@ void DiscoverySS::sendSleepDiscoverPackets(){
         discoverySocket.sendPacketToServer(&sendPacket, BROADCAST, NULL);
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
+}
 
+void DiscoverySS::sendSleepExitPackets(struct sockaddr_in serverAddrIn){
+    packet sendPacket;
+    sendPacket.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT;
+    // Manda o pacote de exit enquanto não recebe confirmação
+    while(!hasLeft && isRunning()){
+        #ifdef DEBUG
+        std::cout << "Enviando packet de saída..."<< std::endl;
+        #endif
+        discoverySocket.sendPacketToServer(&sendPacket, DIRECT_TO_SERVER, &serverAddrIn);
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }
 
 }
 

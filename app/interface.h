@@ -56,6 +56,7 @@ class InterfaceSS : public WOLSubsystem{
 
     private:
     WOLTable table;
+    void userInputInterface();
 
     public:
     
@@ -63,7 +64,6 @@ class InterfaceSS : public WOLSubsystem{
 
     void run();
     void printInterface();
-    bool readInput();
 
 
 

@@ -30,11 +30,15 @@ void interfaceSubsystemThread();
 // Subsistema genérico do WakeOnLan, que roda numa thread própria
 class WOLSubsystem{
 
+    protected:
+    void setRunning(bool value);
+
+
     private:
     bool manager; // define se o subsistema atua no modo gerente
     std::thread* runThread; // thread principal do SS
     bool running; // define se o SS está rodando. Caso não esteja, threads devem parar de rodar
-    void setRunning(bool value);
+    // void setRunning(bool value);
     
     virtual void run()=0; // Chamada por start, thread principal do subsistema
     

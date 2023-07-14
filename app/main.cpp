@@ -40,6 +40,10 @@ int main(int argc, char *argv[])
     // Writer: Discovery - Reader: Management
     connectMailboxes(managementSS.getMailbox(), "M_IN", discoverySS.getMailbox(), "D_OUT");
 
+    // Writer: Interface - Reader: Discovery
+    connectMailboxes(discoverySS.getMailbox(), "D_IN", interfaceSS.getMailbox(), "I_OUT");
+
+
     // Obtém hostname
     std::string hostname; // String vazia significa que hostname não foi definido
     std::ifstream hostname_file;
@@ -91,19 +95,18 @@ int main(int argc, char *argv[])
     #endif
 
 
-
-
-
     discoverySS.start();
     managementSS.start();
-    //interfaceSS.start();
+    interfaceSS.start();
 
-    while(!stopExecution){
+    // Executa enquanto todos os subsistemas estão rodando
+    while(!stopExecution && interfaceSS.isRunning() && discoverySS.isRunning() && managementSS.isRunning()){
 
     }
+
     managementSS.stop();
     discoverySS.stop();
-    //interfaceSS.stop();
+    interfaceSS.stop();
     std::cout << "FINALIZADO!" << std::endl;
 
     return 0;

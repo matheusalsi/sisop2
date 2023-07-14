@@ -9,6 +9,7 @@
 #include <strings.h>
 #include <arpa/inet.h>
 #include <sys/ioctl.h>
+#include <thread>
 #include <linux/if.h>
 #include <string.h>
 #include "packet.h"
@@ -31,26 +32,35 @@ class Socket{
     bool debug;
 
     void createSocket();
-    void setServerBindInfo();
-    void setLastClientInfo(struct sockaddr_in);
-
+    // Configura as informações do servidor que serão utilizadas para fazer o bind
+    void setServerInfo();
+   
     public:
 
     Socket(int port, bool debug);
 
+    // Cria um socket, e define as informações que serão utilizadas para bindar o servidor na porta 
     void openSocket();
     void closeSocket();
+    // Binda o servidor na porta especificada
     void bindSocket();
+
+    int getSocketDescriptor();
+    struct in_addr getServerBinaryNetworkAddress();
+
+    // Define que o socket irá receber ou não pacotes em broadcast. Utilizado pelos clientes
     void setSocketBroadcastToTrue();
     void setSocketBroadcastToFalse();
-    int getSocketDescriptor();
 
-    void sendPacketToClient(struct packet* sendPacketServer, struct sockaddr_in clientAddrIn);
-    void sendPacketToLastSeenClient(struct packet* sendPacketServer);
-    void sendPacketToServer(struct packet* sendPacketClient, int type, struct hostent* serverAddrIn);
+    // Envia um pacote para um cliente
+    void sendPacketToClient(struct packet* sendPacketServer, struct sockaddr_in clientAddrIn); 
+    // Recebe um pacote de um cliente e retorna as informações do cliente que enviou o pacote
     struct sockaddr_in receivePacketFromClients(struct packet* recvPacketServer);
-    void receivePacketFromServer(struct packet* recvPacketClient);
-    struct in_addr getServerBinaryNetworkAddress();
+    // Envia um pacote para o servidor, especificando o tipo de envio
+    void sendPacketToServer(struct packet* sendPacketClient, int type,struct sockaddr_in* serverAddrIn);
+    // Recebe um pacote do servidor 
+    struct sockaddr_in receivePacketFromServer(struct packet* recvPacketClient);
+    
 };
 
 #endif 
