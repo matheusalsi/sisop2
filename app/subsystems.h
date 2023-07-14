@@ -19,6 +19,7 @@
 
 #include "socket.h"
 #include "packet.h"
+#include "mailbox.h"
 
 void discoverySubsystemThread();
 void monitoringSubsystemThread();
@@ -55,11 +56,6 @@ class WOLSubsystem{
 
 // Subsistema de monitoramento
 class MonitoringSS : public WOLSubsystem{
-
-};
-
-// Subsistema de gerenciamento
-class ManagementSS : public WOLSubsystem{
 
 };
 

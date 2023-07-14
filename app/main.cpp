@@ -1,4 +1,5 @@
 #include "interface.h"
+#include "management.h"
 #include "discovery.h"
 
 #include <signal.h>
@@ -32,8 +33,14 @@ int main(int argc, char *argv[])
     }
 
     DiscoverySS discoverySS(manager);
+    ManagementSS managementSS(manager);
     InterfaceSS interfaceSS(manager);
-    
+
+    SubsystemMailBox sb1;
+    managementSS.discoverySSInbox = &sb1;
+    discoverySS.managementSSOutbox = &sb1;
+
+
     // Obtém hostname
     std::string hostname; // String vazia significa que hostname não foi definido
     std::ifstream hostname_file;
@@ -73,6 +80,9 @@ int main(int argc, char *argv[])
     }
 
     if(macaddr_str.empty()){
+        std::cout << "Não foi possível obter o endereço MAC" << std::endl;
+    }
+    else{
         discoverySS.setMACAddress(macaddr_str);
     }
 
@@ -86,11 +96,13 @@ int main(int argc, char *argv[])
 
 
     discoverySS.start();
+    managementSS.start();
     //interfaceSS.start();
 
     while(!stopExecution){
 
     }
+    managementSS.stop();
     discoverySS.stop();
     //interfaceSS.stop();
     std::cout << "FINALIZADO!" << std::endl;

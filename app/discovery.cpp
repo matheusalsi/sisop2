@@ -86,17 +86,20 @@ void DiscoverySS::run(){
                     // #endif
                 }
 
-                #ifdef DEBUG
-                char buffer[INET_ADDRSTRLEN];
-                struct in_addr serverBinaryNetworkAddr = discoverySocket.getServerBinaryNetworkAddress();
-                inet_ntop( AF_INET, &serverBinaryNetworkAddr, buffer, sizeof( buffer ));
-                std::cout << "Recebi um pacote do gerenciador " << "(" << buffer << ")" << "!" << std::endl;
-                #endif
-
                 foundManager = true; // Seta como true, acaba encerrando a thread "packet sender"
                 packetSenderThread.join(); // Espera a thread encerrar
 
-                // GUARDA INFORMAÇÕES DO MANAGER (TO-DO)
+                // Manda informações do manager para ser guardado na tabela
+                std::string message;
+                char str[INET_ADDRSTRLEN];
+                in_addr ip = discoverySocket.getServerBinaryNetworkAddress();
+                inet_ntop(AF_INET, &ip, str, INET_ADDRSTRLEN);
+                message.append(str);
+                message.append("&");
+                message.append(getHostname());
+                message.append("&");
+                message.append(getMACAddress());
+                managementSSOutbox->writeMessage(message);
 
             }
 

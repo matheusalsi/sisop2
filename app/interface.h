@@ -53,6 +53,11 @@ class InterfaceSS : public WOLSubsystem{
     WOLTable table;
 
     public:
+
+    SubsystemMailBox* discoverySSOutbox;
+    SubsystemMailBox* managementSSInbox;
+    SubsystemMailBox* managementSSOutbox;
+
     InterfaceSS(bool isManager) : WOLSubsystem(isManager) {};
 
     void run();

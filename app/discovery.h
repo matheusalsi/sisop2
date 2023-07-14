@@ -23,6 +23,9 @@ class DiscoverySS : public WOLSubsystem{
     void run();
 
 
+    SubsystemMailBox* interfaceSSInbox;
+    SubsystemMailBox* managementSSOutbox;
+
     void setHostname(std::string& hostname);
     void setMACAddress(std::string& macaddress);
     std::string getHostname();
