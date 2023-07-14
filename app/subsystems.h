@@ -33,14 +33,13 @@ class WOLSubsystem{
     private:
     bool manager; // define se o subsistema atua no modo gerente
     std::thread* runThread; // thread principal do SS
-
     bool running; // define se o SS está rodando. Caso não esteja, threads devem parar de rodar
-
     void setRunning(bool value);
     
-
     virtual void run()=0; // Chamada por start, thread principal do subsistema
     
+    protected:
+    SubsystemMailBox mailBox;
 
     public:
     WOLSubsystem(bool isManager);
@@ -50,6 +49,8 @@ class WOLSubsystem{
     
     virtual void start(); // Inicializa execução do subsistema
     virtual void stop(); // Encerra execução do subsistema
+
+    SubsystemMailBox& getMailbox();
 
 
 };

@@ -1,3 +1,8 @@
+#ifndef __INTERFACE_H__
+#define __INTERFACE_H__
+
+
+
 #include "subsystems.h"
 #include <map>
 #include <string>
@@ -53,11 +58,7 @@ class InterfaceSS : public WOLSubsystem{
     WOLTable table;
 
     public:
-
-    SubsystemMailBox* discoverySSOutbox;
-    SubsystemMailBox* managementSSInbox;
-    SubsystemMailBox* managementSSOutbox;
-
+    
     InterfaceSS(bool isManager) : WOLSubsystem(isManager) {};
 
     void run();
@@ -67,3 +68,5 @@ class InterfaceSS : public WOLSubsystem{
 
 
 };
+
+#endif // __INTERFACE_H__

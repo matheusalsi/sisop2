@@ -12,9 +12,9 @@ void managementSubsystemThread(){
 
 void ManagementSS::run(){
     while(isRunning()){
-        if(!discoverySSInbox->isEmpty()){
+        if(!mailBox.isEmpty("D_OUT")){
             std::string msg;
-            discoverySSInbox->readMessage(msg);
+            mailBox.readMessage("D_OUT", msg);
             std::cout << "Mensagem de DISCOVERY: " << msg << std::endl; 
         }
     }

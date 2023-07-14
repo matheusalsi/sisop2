@@ -1,3 +1,6 @@
+#ifndef DISCOVERY_H
+#define DISCOVERY_H
+
 #include "subsystems.h"
 #define DISCOVERY_PORT 7575
 
@@ -22,10 +25,6 @@ class DiscoverySS : public WOLSubsystem{
     void stop();
     void run();
 
-
-    SubsystemMailBox* interfaceSSInbox;
-    SubsystemMailBox* managementSSOutbox;
-
     void setHostname(std::string& hostname);
     void setMACAddress(std::string& macaddress);
     std::string getHostname();
@@ -38,3 +37,5 @@ class DiscoverySS : public WOLSubsystem{
     macaddress("")
     {};
 };
+
+#endif

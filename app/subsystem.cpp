@@ -37,3 +37,8 @@ void WOLSubsystem::stop(){
     }
 
 }
+
+SubsystemMailBox& WOLSubsystem::getMailbox()
+{
+    return mailBox;
+}

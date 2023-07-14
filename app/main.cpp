@@ -1,3 +1,4 @@
+#include "mailbox.h"
 #include "interface.h"
 #include "management.h"
 #include "discovery.h"
@@ -36,10 +37,8 @@ int main(int argc, char *argv[])
     ManagementSS managementSS(manager);
     InterfaceSS interfaceSS(manager);
 
-    SubsystemMailBox sb1;
-    managementSS.discoverySSInbox = &sb1;
-    discoverySS.managementSSOutbox = &sb1;
-
+    // Writer: Discovery - Reader: Management
+    connectMailboxes(managementSS.getMailbox(), "M_IN", discoverySS.getMailbox(), "D_OUT");
 
     // Obtém hostname
     std::string hostname; // String vazia significa que hostname não foi definido

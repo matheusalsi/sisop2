@@ -99,7 +99,8 @@ void DiscoverySS::run(){
                 message.append(getHostname());
                 message.append("&");
                 message.append(getMACAddress());
-                managementSSOutbox->writeMessage(message);
+                
+                mailBox.writeMessage("M_IN", message);
 
             }
 
