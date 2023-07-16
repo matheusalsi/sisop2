@@ -7,6 +7,7 @@
 #include <map>
 #include <string>
 #include <iomanip>
+#include <signal.h>
 
 #define HOSTNAME_ROW_WIDTH 8
 #define MACADDRESS_ROW_WIDTH 17
@@ -57,6 +58,7 @@ class InterfaceSS : public WOLSubsystem{
     private:
     WOLTable table;
     void userInputInterface();
+    void handleKeyboardInterruption(int signum);
 
     public:
     

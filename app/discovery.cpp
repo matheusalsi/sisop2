@@ -74,18 +74,16 @@ void DiscoverySS::run(){
                 message.append("ADD_CLIENT");
                 message.append("&");
                 message.append(ipStr);
-                message.append("&");
-                // message.append(macAndHostname);
                 // message.append("&");
-                message.append(std::to_string(clientAddrIn.sin_port));
+                // message.append(macAndHostname);
                 mailBox.writeMessage("M_IN", message);
 
-                #ifdef DEBUG
-                // Envia mensagem para o monitoramento adicionando o ip do cliente a lista
-                messageClientsIps.append(ipStr);
-                messageClientsIps.append("&");
-                mailBox.writeMessage("MO_IN", messageClientsIps);
-                #endif
+                // #ifdef DEBUG
+                // // Envia mensagem para o monitoramento adicionando o ip do cliente a lista
+                // messageClientsIps.append(ipStr);
+                // messageClientsIps.append("&");
+                // mailBox.writeMessage("MO_IN", messageClientsIps);
+                // #endif
 
             }
 
@@ -105,8 +103,6 @@ void DiscoverySS::run(){
                 messageExit.append("REMOVE_CLIENT");
                 messageExit.append("&");
                 messageExit.append(ipStr);
-                messageExit.append("&");
-                messageExit.append(std::to_string(clientAddrIn.sin_port));
                 mailBox.writeMessage("M_IN", messageExit);
             }
     
@@ -141,9 +137,13 @@ void DiscoverySS::run(){
                 packetSenderThreadExit.join(); // Espera a thread encerrar
 
                 // Avisa para a interface que o cliente foi removido
-                // std::string messageTableRemoved;
-                // messageTableRemoved.append("I_WAS_REMOVED");
-                // mailBox.writeMessage("I_IN", messageTableRemoved);
+                #ifdef DEBUG
+                std::cout << "Estou avisando a minha interface que eu fui removido" << std::endl;
+                #endif
+                std::string messageTableRemoved;
+                messageTableRemoved.append("I_WAS_REMOVED");
+                mailBox.writeMessage("I_IN", messageTableRemoved);
+                // setRunning(false); // Discovery encerra a execução do participante
             }
             else if (!hasLeft){ // Busca o manager
                 std::thread packetSenderThreadDiscover(&DiscoverySS::sendSleepDiscoverPackets, this);

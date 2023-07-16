@@ -10,7 +10,6 @@
 #include <sys/ioctl.h>
 #include <linux/if.h>
 
-
 bool stopExecution = false;
 
 void handleSigint(int signum){
@@ -21,35 +20,21 @@ bool isManager(int argc){
     return argc == 2;
 }
 
-int main(int argc, char *argv[])
-{
-    bool manager = isManager(argc);
-    // Handling de Ctrl+c
-    signal(SIGINT, handleSigint);
-
-    if(manager){
-        std::cout << "Eu sou o gerente!" << std::endl;
-    }
-    else{
-        std::cout << "Eu sou um participante" << std::endl;
-    }
-
-    DiscoverySS discoverySS(manager);
-    ManagementSS managementSS(manager);
-    MonitoringSS monirotingSS(manager);
-    InterfaceSS interfaceSS(manager);
-
-    // Writer: Discovery - Reader: Management
+void initMailboxes(DiscoverySS& discoverySS, ManagementSS& managementSS, InterfaceSS& interfaceSS, MonitoringSS& monitoringSS){
+    // Reader: Management - Writer: Discovery
     connectMailboxes(managementSS.getMailbox(), "M_IN", discoverySS.getMailbox(), "D_OUT");
 
     // Writer: Discovery - Reader: Monitoring
-    connectMailboxes(monirotingSS.getMailbox(), "MO_IN", discoverySS.getMailbox(), "D2_OUT");
+    connectMailboxes(monitoringSS.getMailbox(), "MO_IN", discoverySS.getMailbox(), "D2_OUT");
 
-    // Writer: Interface - Reader: Discovery
+    // Reader: Discovery - Writer: Interface 
     connectMailboxes(discoverySS.getMailbox(), "D_IN", interfaceSS.getMailbox(), "I_OUT");
 
+    // Reader: Interface - Writer: Discovery: 
+    connectMailboxes(interfaceSS.getMailbox(), "I_IN", discoverySS.getMailbox(), "D3_OUT");
+}
 
-    // Obtém hostname
+std::string getHostName(){
     std::string hostname; // String vazia significa que hostname não foi definido
     std::ifstream hostname_file;
     hostname_file.open("/etc/hostname");
@@ -57,12 +42,14 @@ int main(int argc, char *argv[])
     if(hostname_file.is_open()){
         getline(hostname_file, hostname); 
     }
+    return hostname;
+}
 
-    // Obtém MAC
-    struct ifreq iface;
-    std::string macaddr_str;
-
+std::string getMACAddress(){
     int sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+    std::string macaddr_str;
+    ifreq iface;
+
     if(sockfd >= 0){
         strcpy(iface.ifr_name, "eth0");
 
@@ -77,42 +64,72 @@ int main(int argc, char *argv[])
                     (unsigned char) iface.ifr_addr.sa_data[5]);
             macaddr_str = iface_str;
         }
-        
     }
-    
-    if(hostname.empty()){
-        std::cout << "Não foi possível obter um hostname" << std::endl;
-    }
-    else{
-        discoverySS.setHostname(hostname);
-    }
+    return macaddr_str;
+}
 
-    if(macaddr_str.empty()){
+void getComputerInfo(DiscoverySS& discoverySS){
+    // Obtém hostname
+    std::string hostname;
+    hostname = getHostName();
+
+    if(hostname.empty())
+        std::cout << "Não foi possível obter um hostname" << std::endl;
+    else
+        discoverySS.setHostname(hostname);
+
+    // Obtém MAC
+    std::string macaddr;
+    macaddr = getMACAddress();
+
+     if(macaddr.empty())
         std::cout << "Não foi possível obter o endereço MAC" << std::endl;
-    }
-    else{
-        discoverySS.setMACAddress(macaddr_str);
-    }
+    else
+        discoverySS.setMACAddress(macaddr);
 
     #ifdef DEBUG
     std::cout << "Meu hostname: "<< hostname << std::endl;
-    std::cout << "Meu MAC: " << macaddr_str << std::endl;
+    std::cout << "Meu MAC: " << macaddr << std::endl;
+    #endif   
+}
+
+
+
+int main(int argc, char *argv[])
+{
+    bool manager = isManager(argc);
+    // Handling de Ctrl+c
+    signal(SIGINT, handleSigint);
+
+    #ifdef DEBUG
+    if(manager)
+        std::cout << "Eu sou o gerente!" << std::endl;
+    else
+        std::cout << "Eu sou um participante" << std::endl;
     #endif
 
+    DiscoverySS discoverySS(manager);
+    ManagementSS managementSS(manager);
+    MonitoringSS monitoringSS(manager);
+    InterfaceSS interfaceSS(manager);
+
+    initMailboxes(discoverySS, managementSS, interfaceSS, monitoringSS);
 
     discoverySS.start();
     managementSS.start();
-    monirotingSS.start();
+    // monitoringSS.start();
     interfaceSS.start();
 
+    getComputerInfo(discoverySS);
+
     // Executa enquanto todos os subsistemas estão rodando
-    while(!stopExecution && interfaceSS.isRunning() && discoverySS.isRunning() && managementSS.isRunning() && monirotingSS.isRunning()){
+    while(!stopExecution && interfaceSS.isRunning() && discoverySS.isRunning() && managementSS.isRunning()/* && monitoringSS.isRunning()*/){
 
     }
 
     managementSS.stop();
     discoverySS.stop();
-    monirotingSS.stop();
+    // monitoringSS.stop();
     interfaceSS.stop();
     std::cout << "FINALIZADO!" << std::endl;
 
