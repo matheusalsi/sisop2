@@ -35,9 +35,7 @@ void DiscoverySS::run(){
 
     while(isRunning()){
         packet recvPacket, sendPacket;
-        #ifdef DEBUG
-        std::string messageClientsIps;
-        #endif
+
         if(isManager()){ // Server - os pacotes de sleep service discovery e sleep service exit
 
             #ifdef DEBUG
@@ -80,9 +78,7 @@ void DiscoverySS::run(){
 
                 #ifdef DEBUG
                 // Envia mensagem para o monitoramento adicionando o ip do cliente a lista
-                messageClientsIps.append(ipStr);
-                messageClientsIps.append("&");
-                mailBox.writeMessage("MO_IN", messageClientsIps);
+                mailBox.writeMessage("MO_IN", ipStr);
                 #endif
 
             }

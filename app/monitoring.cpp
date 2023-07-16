@@ -18,27 +18,39 @@ void MonitoringSS::stop(){
 
 void MonitoringSS::run(){
     packet recvPacket, sendPacket;
+    std::string messageClientsIp;
     while (isRunning()) {
         if(isManager()){ // Cliente - envia os pacotes de sleep status requests
             #ifdef DEBUG
             std::cout << "Estou enviando um packet em " << MONITORING_PORT << std::endl;
             #endif
-
-            while (mailBox.isEmpty("D2_OUT")){ // Espera chegar alguma mensagem na caixa de mensagens
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+            
+            if (!mailBox.isEmpty("D2_OUT")){
+                while (!mailBox.isEmpty("D2_OUT")){ // Pega todas as mensagens da caixa do discovery (vai ser gerenciamento)
+                    std::string messageNewClientIP;
+                    if (messageClientsIp.size() > 0) 
+                        messageClientsIp.append("&");
+                    mailBox.readMessage("D2_OUT", messageNewClientIP);
+                    messageClientsIp.append(messageNewClientIP);
+                }
+                setIpList(ipList, messageClientsIp);
+            }
+            
+            else if (ipList.size() == 0) {
+                std::cout << "Não há clientes para monitorar" << std::endl;
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+                continue;
             }
 
             #ifdef DEBUG
             std::cout << "Estou iniciando threads em " << MONITORING_PORT << std::endl;
             #endif  
-                
-            std::string messageClientsIps;
-            mailBox.readMessage("D2_OUT", messageClientsIps);
-            setIpList(ipList , messageClientsIps);
+            
 
             std::vector<std::thread> packetSenderThreadStatus;
 
-            for(unsigned int i = 0; i < ipList.size()-1; i++) {
+            for(unsigned int i = 0; i < ipList.size(); i++) {
                 char ipStr[INET_ADDRSTRLEN];
                 strcpy(ipStr, this->ipList[i].c_str());
                 #ifdef DEBUG
