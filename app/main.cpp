@@ -2,6 +2,7 @@
 #include "interface.h"
 #include "management.h"
 #include "discovery.h"
+#include "monitoring.h"
 
 #include <signal.h>
 #include <string.h>
@@ -35,6 +36,7 @@ int main(int argc, char *argv[])
 
     DiscoverySS discoverySS(manager);
     ManagementSS managementSS(manager);
+    MonitoringSS monirotingSS(manager);
     InterfaceSS interfaceSS(manager);
 
     // Writer: Discovery - Reader: Management
@@ -97,15 +99,17 @@ int main(int argc, char *argv[])
 
     discoverySS.start();
     managementSS.start();
+    monirotingSS.start();
     interfaceSS.start();
 
     // Executa enquanto todos os subsistemas estão rodando
-    while(!stopExecution && interfaceSS.isRunning() && discoverySS.isRunning() && managementSS.isRunning()){
+    while(!stopExecution && interfaceSS.isRunning() && discoverySS.isRunning() && managementSS.isRunning() && monirotingSS.isRunning()){
 
     }
 
     managementSS.stop();
     discoverySS.stop();
+    monirotingSS.stop();
     interfaceSS.stop();
     std::cout << "FINALIZADO!" << std::endl;
 

@@ -33,10 +33,10 @@ class DiscoverySS : public WOLSubsystem{
     std::string getMACAddress();
 
     DiscoverySS(bool isManager) : 
-    WOLSubsystem(isManager),
-    discoverySocket(DISCOVERY_PORT, false),
-    hostname(""),
-    macaddress("")
+        WOLSubsystem(isManager),
+        discoverySocket(DISCOVERY_PORT, false),
+        hostname(""),
+        macaddress("")
     {};
 };
 

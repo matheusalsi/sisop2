@@ -59,9 +59,4 @@ class WOLSubsystem{
 
 };
 
-// Subsistema de monitoramento
-class MonitoringSS : public WOLSubsystem{
-
-};
-
 #endif
