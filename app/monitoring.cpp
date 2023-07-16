@@ -25,11 +25,12 @@ void MonitoringSS::run(){
             #endif
 
             while (mailBox.isEmpty("D2_OUT")){ // Espera chegar alguma mensagem na caixa de mensagens
-                #ifdef DEBUG
-                std::cout << "Estou iniciando threads em " << MONITORING_PORT << std::endl;
-                #endif
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            }  
+            }
+
+            #ifdef DEBUG
+            std::cout << "Estou iniciando threads em " << MONITORING_PORT << std::endl;
+            #endif  
                 
             std::string messageClientsIps;
             mailBox.readMessage("D2_OUT", messageClientsIps);
@@ -81,11 +82,6 @@ void MonitoringSS::run(){
                 sendPacket.type = SLEEP_STATUS_REQUEST | ACKNOWLEDGE;
                 monitoringSocket.sendPacketToServer(&sendPacket, DIRECT_TO_SERVER, &serverAddrIn);
             }
-            /*
-            if(recvPacket.type == WAKE_UP){
-                //todo - acordar máquina
-            }
-            */
         }
     }
     
