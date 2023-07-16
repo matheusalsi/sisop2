@@ -22,7 +22,7 @@ class MonitoringSS : public WOLSubsystem {
     std::vector<std::string> getIplist();
     
     // Thread que envia e espera pacotes "Sleep Status Request" 
-    void sendSleepStatusPackets(struct sockaddr_in AddrIn);
+    void sendSleepStatusPackets(struct sockaddr_in managerAddrIn);
 
     public:
     void start();

@@ -48,6 +48,8 @@ class Socket{
     int getSocketDescriptor();
     struct in_addr getServerBinaryNetworkAddress();
 
+    // Seta quanto tempo o socket vai ficar esperando receber um pacote (se não utilizar essa função ele vai esperar indefinidamente)
+    void setSocketTimeout(int timeMS);
     // Define que o socket irá receber ou não pacotes em broadcast. Utilizado pelos clientes
     void setSocketBroadcastToTrue();
     void setSocketBroadcastToFalse();
@@ -60,6 +62,7 @@ class Socket{
     void sendPacketToServer(struct packet* sendPacketClient, int type,struct sockaddr_in* serverAddrIn);
     // Recebe um pacote do servidor 
     struct sockaddr_in receivePacketFromServer(struct packet* recvPacketClient);
+    
     
 };
 

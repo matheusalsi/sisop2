@@ -3,11 +3,11 @@
 void MonitoringSS::start(){
     monitoringSocket.openSocket();
 
-    if(isManager()){ // Server
+    if(!isManager()){ // Server
         monitoringSocket.bindSocket();
     }
-    else{ // Client
-        monitoringSocket.setSocketBroadcastToFalse(); 
+    else{ // Client 
+        monitoringSocket.setSocketTimeout(100); 
     }
     WOLSubsystem::start();
 };
@@ -19,7 +19,7 @@ void MonitoringSS::stop(){
 void MonitoringSS::run(){
     packet recvPacket, sendPacket;
     while (isRunning()) {
-        if(isManager()){ // Server - envia os pacotes de sleep status requests
+        if(isManager()){ // Cliente - envia os pacotes de sleep status requests
             #ifdef DEBUG
             std::cout << "Estou enviando um packet em " << MONITORING_PORT << std::endl;
             #endif
@@ -37,8 +37,8 @@ void MonitoringSS::run(){
             setIpList(ipList , messageClientsIps);
 
             std::vector<std::thread> packetSenderThreadStatus;
-            
-            for(unsigned int i = 0; i < ipList.size(); i++) {
+
+            for(unsigned int i = 0; i < ipList.size()-1; i++) {
                 char ipStr[INET_ADDRSTRLEN];
                 strcpy(ipStr, this->ipList[i].c_str());
                 #ifdef DEBUG
@@ -56,31 +56,31 @@ void MonitoringSS::run(){
 
             packetSenderThreadStatus.clear();
         }
-        else { // Client - responde os pacotes de sleep status requests
+        else { // Server - responde os pacotes de sleep status requests
 
             #ifdef DEBUG
             std::cout << "Estou esperando um packet em " << MONITORING_PORT << std::endl;
             #endif
 
-            // Fica esperando por pacotes do servidor
-            sockaddr_in serverAddrIn;
-            serverAddrIn = monitoringSocket.receivePacketFromServer(&recvPacket);
+            // Fica esperando por pacotes do manager
+            sockaddr_in managerAddrIn;
+            managerAddrIn = monitoringSocket.receivePacketFromClients(&recvPacket);
 
             #ifdef DEBUG
             char ipStr[INET_ADDRSTRLEN];
-            inet_ntop( AF_INET, &serverAddrIn.sin_addr, ipStr, sizeof( ipStr ));
+            inet_ntop( AF_INET, &managerAddrIn.sin_addr, ipStr, sizeof( ipStr ));
             std::cout << "Recebi um pacote de " << ipStr << "!" << std::endl;
             #endif
 
             // Checa se o tipo do pacote está correto e responde
             if(recvPacket.type == SLEEP_STATUS_REQUEST) {
                 #ifdef DEBUG
-                std::cout << "Estou respondendo o servidor " << ipStr << " sobre meu status" << std::endl;
+                std::cout << "Estou respondendo o manager " << ipStr << " sobre meu status" << std::endl;
                 #endif
 
                 // Retorna para o servidor pacote confirmando que ele recebeu o pacote de status
                 sendPacket.type = SLEEP_STATUS_REQUEST | ACKNOWLEDGE;
-                monitoringSocket.sendPacketToServer(&sendPacket, DIRECT_TO_SERVER, &serverAddrIn);
+                monitoringSocket.sendPacketToClient(&sendPacket, managerAddrIn);
             }
         }
     }
@@ -90,7 +90,7 @@ void MonitoringSS::run(){
 
 };
 
-void MonitoringSS::sendSleepStatusPackets(struct sockaddr_in clientAddrIn){
+void MonitoringSS::sendSleepStatusPackets(struct sockaddr_in managerAddrIn){
     packet sendPacket, recvPacket;
     bool replied = false;
     bool timerExpired = false;
@@ -108,10 +108,8 @@ void MonitoringSS::sendSleepStatusPackets(struct sockaddr_in clientAddrIn){
             timerExpired = true;
         }
 
-        #ifdef DEBUG
-        std::cout << "Enviando packet de saída..."<< std::endl;
-        #endif
-        monitoringSocket.sendPacketToClient(&sendPacket, clientAddrIn);
+
+        monitoringSocket.sendPacketToServer(&sendPacket, DIRECT_TO_SERVER, &managerAddrIn);
 
         monitoringSocket.receivePacketFromClients(&recvPacket);
 
@@ -124,28 +122,28 @@ void MonitoringSS::sendSleepStatusPackets(struct sockaddr_in clientAddrIn){
     if (timerExpired && !replied){
         std::string message;
         char ipStr[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &clientAddrIn.sin_addr, ipStr, INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, &managerAddrIn.sin_addr, ipStr, INET_ADDRSTRLEN);
         message.append("UPDATE_CLIENT_STATUS");
         message.append("&");
         message.append(ipStr);
         message.append("&");
-        message.append(std::to_string(clientAddrIn.sin_port));
+        message.append(std::to_string(managerAddrIn.sin_port));
         message.append("&");
         message.append("awake");
-        mailBox.writeMessage("M_IN", message);
+        mailBox.writeMessage("M_IN2", message);
     }
     else {
         std::string message;
         char ipStr[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &clientAddrIn.sin_addr, ipStr, INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, &managerAddrIn.sin_addr, ipStr, INET_ADDRSTRLEN);
         message.append("UPDATE_CLIENT_STATUS");
         message.append("&");
         message.append(ipStr);
         message.append("&");
-        message.append(std::to_string(clientAddrIn.sin_port));
+        message.append(std::to_string(managerAddrIn.sin_port));
         message.append("&");
         message.append("asleep");
-        mailBox.writeMessage("M_IN", message);
+        mailBox.writeMessage("M_IN2", message);
     }
 };
 

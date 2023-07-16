@@ -24,7 +24,10 @@ void initMailboxes(DiscoverySS& discoverySS, ManagementSS& managementSS, Interfa
     // Reader: Management - Writer: Discovery
     connectMailboxes(managementSS.getMailbox(), "M_IN", discoverySS.getMailbox(), "D_OUT");
 
-    // Writer: Discovery - Reader: Monitoring
+    // Reader: Management - Writer: Monitoring
+    connectMailboxes(managementSS.getMailbox(), "M_IN2", monitoringSS.getMailbox(), "MO_OUT");
+
+    // Reader: Monitoring - Writer: Discovery
     connectMailboxes(monitoringSS.getMailbox(), "MO_IN", discoverySS.getMailbox(), "D2_OUT");
 
     // Reader: Discovery - Writer: Interface 
@@ -117,7 +120,7 @@ int main(int argc, char *argv[])
 
     discoverySS.start();
     managementSS.start();
-    // monitoringSS.start();
+    monitoringSS.start();
     interfaceSS.start();
 
     getComputerInfo(discoverySS);
@@ -129,7 +132,7 @@ int main(int argc, char *argv[])
 
     managementSS.stop();
     discoverySS.stop();
-    // monitoringSS.stop();
+    monitoringSS.stop();
     interfaceSS.stop();
     std::cout << "FINALIZADO!" << std::endl;
 

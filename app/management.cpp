@@ -17,6 +17,11 @@ void ManagementSS::run(){
             mailBox.readMessage("D_OUT", msg);
             std::cout << "Mensagem de DISCOVERY: " << msg << std::endl; 
         }
+        if(!mailBox.isEmpty("MO_OUT")){
+            std::string msg;
+            mailBox.readMessage("MO_OUT", msg);
+            std::cout << "Mensagem de MONITORING: " << msg << std::endl; 
+        }
     }
 }
 

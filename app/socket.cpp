@@ -44,6 +44,14 @@ struct in_addr Socket::getServerBinaryNetworkAddress(){
     return serverAddrIn.sin_addr;
 }
 
+void Socket::setSocketTimeout(int timeMS){
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = timeMS * 1000;
+    if (setsockopt(socketFD, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
+        perror("Error");
+}
+}
 
 void Socket::setSocketBroadcastToTrue(){
     int yes = 1;

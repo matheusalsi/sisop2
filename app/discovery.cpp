@@ -78,12 +78,12 @@ void DiscoverySS::run(){
                 // message.append(macAndHostname);
                 mailBox.writeMessage("M_IN", message);
 
-                // #ifdef DEBUG
-                // // Envia mensagem para o monitoramento adicionando o ip do cliente a lista
-                // messageClientsIps.append(ipStr);
-                // messageClientsIps.append("&");
-                // mailBox.writeMessage("MO_IN", messageClientsIps);
-                // #endif
+                #ifdef DEBUG
+                // Envia mensagem para o monitoramento adicionando o ip do cliente a lista
+                messageClientsIps.append(ipStr);
+                messageClientsIps.append("&");
+                mailBox.writeMessage("MO_IN", messageClientsIps);
+                #endif
 
             }
 
