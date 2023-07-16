@@ -24,15 +24,17 @@ void MonitoringSS::run(){
             std::cout << "Estou enviando um packet em " << MONITORING_PORT << std::endl;
             #endif
 
-            while (mailBox.isEmpty("MO_IN")){ // Espera chegar alguma mensagem na caixa de mensagens
+            while (mailBox.isEmpty("D2_OUT")){ // Espera chegar alguma mensagem na caixa de mensagens
+                #ifdef DEBUG
+                std::cout << "Estou iniciando threads em " << MONITORING_PORT << std::endl;
+                #endif
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }  
                 
             std::string messageClientsIps;
-            mailBox.readMessage("MO_IN", messageClientsIps);
+            mailBox.readMessage("D2_OUT", messageClientsIps);
             setIpList(ipList , messageClientsIps);
 
-            std::vector<sockaddr_in> clientAddrIn;
             std::vector<std::thread> packetSenderThreadStatus;
             
             for(unsigned int i = 0; i < ipList.size(); i++) {
@@ -41,15 +43,16 @@ void MonitoringSS::run(){
                 #ifdef DEBUG
                 std::cout << "Estou enviando status request para o client de ip: " << ipStr << std::endl;
                 #endif
-                inet_pton(AF_INET, ipStr, &(clientAddrIn[i].sin_addr));
-                packetSenderThreadStatus.emplace_back(&MonitoringSS::sendSleepStatusPackets, this, clientAddrIn[i]);
+
+                sockaddr_in clientAddrIn;
+                inet_pton(AF_INET, ipStr, &(clientAddrIn.sin_addr));
+                packetSenderThreadStatus.emplace_back(&MonitoringSS::sendSleepStatusPackets, this, clientAddrIn);
             }
             
             for (auto& packetSenderThreadStatus : packetSenderThreadStatus) {
                 packetSenderThreadStatus.join();
             }
 
-            clientAddrIn.clear();
             packetSenderThreadStatus.clear();
         }
         else { // Client - responde os pacotes de sleep status requests

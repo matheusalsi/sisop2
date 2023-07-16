@@ -42,6 +42,9 @@ int main(int argc, char *argv[])
     // Writer: Discovery - Reader: Management
     connectMailboxes(managementSS.getMailbox(), "M_IN", discoverySS.getMailbox(), "D_OUT");
 
+    // Writer: Discovery - Reader: Monitoring
+    connectMailboxes(managementSS.getMailbox(), "MO_IN", discoverySS.getMailbox(), "D2_OUT");
+
     // Writer: Interface - Reader: Discovery
     connectMailboxes(discoverySS.getMailbox(), "D_IN", interfaceSS.getMailbox(), "I_OUT");
 
