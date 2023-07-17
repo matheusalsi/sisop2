@@ -3,10 +3,10 @@
 void MonitoringSS::start(){
     monitoringSocket.openSocket();
 
-    if(!isManager()){ // Server
+    if(!isManager()){ // Cliente
         monitoringSocket.bindSocket();
     }
-    else{ // Client 
+    else{ // Server 
         monitoringSocket.setSocketTimeoutMS(100); 
     }
     WOLSubsystem::start();
@@ -113,9 +113,16 @@ void MonitoringSS::sendSleepStatusPackets(struct sockaddr_in managerAddrIn){
 
     // Manda o pacote de sleepStatus enquanto não recebe confirmação e não há timeOut
     while(!timerExpired && !replied && isRunning()){
+        recvPacket.type = SLEEP_STATUS_REQUEST;
         monitoringSocket.sendPacketToServer(&sendPacket, DIRECT_TO_SERVER, &managerAddrIn);
 
-        monitoringSocket.receivePacketFromClients(&recvPacket);
+        try {
+            monitoringSocket.receivePacketFromClients(&recvPacket);
+        } catch(const std::runtime_error& e) {
+            #ifdef DEBUG
+            std::cout << "Exceção capturada: " << e.what() << std::endl;
+            #endif
+        }
 
         if(recvPacket.type == (SLEEP_STATUS_REQUEST | ACKNOWLEDGE)) {
             std::cout << "Recebi um pacote do cliente com o status awake" << std::endl;
