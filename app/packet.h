@@ -15,8 +15,7 @@
 
 typedef struct packet{
     unsigned short int type; //Tipo do pacote (p.ex. DATA | CMD)
-    unsigned short int length; //Comprimento do payload
-    const char* _payload; //Dados da mensagem
+    char _payload[64]; //Dados da mensagem (será utilizado para pegar o Hostname e MAC)
 
 } packet;
 

@@ -6,7 +6,6 @@
 
 #include <signal.h>
 #include <string.h>
-#include <fstream>
 #include <sys/ioctl.h>
 #include <linux/if.h>
 
@@ -37,65 +36,6 @@ void initMailboxes(DiscoverySS& discoverySS, ManagementSS& managementSS, Interfa
     connectMailboxes(interfaceSS.getMailbox(), "I_IN", discoverySS.getMailbox(), "D3_OUT");
 }
 
-std::string getHostName(){
-    std::string hostname; // String vazia significa que hostname não foi definido
-    std::ifstream hostname_file;
-    hostname_file.open("/etc/hostname");
-
-    if(hostname_file.is_open()){
-        getline(hostname_file, hostname); 
-    }
-    return hostname;
-}
-
-std::string getMACAddress(){
-    int sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
-    std::string macaddr_str;
-    ifreq iface;
-
-    if(sockfd >= 0){
-        strcpy(iface.ifr_name, "eth0");
-
-        if (ioctl(sockfd, SIOCGIFHWADDR, &iface) == 0) {
-            char iface_str [18];
-            sprintf(iface_str, "%02x:%02x:%02x:%02x:%02x:%02x",
-                    (unsigned char) iface.ifr_addr.sa_data[0],
-                    (unsigned char) iface.ifr_addr.sa_data[1],
-                    (unsigned char) iface.ifr_addr.sa_data[2],
-                    (unsigned char) iface.ifr_addr.sa_data[3],
-                    (unsigned char) iface.ifr_addr.sa_data[4],
-                    (unsigned char) iface.ifr_addr.sa_data[5]);
-            macaddr_str = iface_str;
-        }
-    }
-    return macaddr_str;
-}
-
-void getComputerInfo(DiscoverySS& discoverySS){
-    // Obtém hostname
-    std::string hostname;
-    hostname = getHostName();
-
-    if(hostname.empty())
-        std::cout << "Não foi possível obter um hostname" << std::endl;
-    else
-        discoverySS.setHostname(hostname);
-
-    // Obtém MAC
-    std::string macaddr;
-    macaddr = getMACAddress();
-
-     if(macaddr.empty())
-        std::cout << "Não foi possível obter o endereço MAC" << std::endl;
-    else
-        discoverySS.setMACAddress(macaddr);
-
-    #ifdef DEBUG
-    std::cout << "Meu hostname: "<< hostname << std::endl;
-    std::cout << "Meu MAC: " << macaddr << std::endl;
-    #endif   
-}
-
 
 
 int main(int argc, char *argv[])
@@ -122,8 +62,6 @@ int main(int argc, char *argv[])
     managementSS.start();
     monitoringSS.start();
     interfaceSS.start();
-
-    getComputerInfo(discoverySS);
 
     // Executa enquanto todos os subsistemas estão rodando
     while(!stopExecution && interfaceSS.isRunning() && discoverySS.isRunning() && managementSS.isRunning()/* && monitoringSS.isRunning()*/){

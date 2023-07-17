@@ -120,7 +120,7 @@ void MonitoringSS::sendSleepStatusPackets(struct sockaddr_in managerAddrIn){
             monitoringSocket.receivePacketFromClients(&recvPacket);
         } catch(const std::runtime_error& e) {
             #ifdef DEBUG
-            std::cout << "Exceção capturada: " << e.what() << std::endl;
+            std::cout << "Exceção capturada na thread de sleep status packets: " << e.what() << std::endl;
             #endif
         }
 
@@ -142,8 +142,6 @@ void MonitoringSS::sendSleepStatusPackets(struct sockaddr_in managerAddrIn){
     message.append("UPDATE_CLIENT_STATUS");
     message.append("&");
     message.append(ipStr);
-    message.append("&");
-    message.append(std::to_string(managerAddrIn.sin_port));
     message.append("&");
     
     if (timerExpired && !replied)

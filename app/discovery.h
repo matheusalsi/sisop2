@@ -1,7 +1,9 @@
 #ifndef DISCOVERY_H
 #define DISCOVERY_H
 
+#include <fstream>
 #include "subsystems.h"
+
 #define DISCOVERY_PORT 7575
 
 // Subsistema de descoberta
@@ -27,8 +29,6 @@ class DiscoverySS : public WOLSubsystem{
     void stop();
     void run();
 
-    void setHostname(std::string& hostname);
-    void setMACAddress(std::string& macaddress);
     std::string getHostname();
     std::string getMACAddress();
 
