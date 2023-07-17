@@ -49,7 +49,7 @@ class Socket{
     struct in_addr getServerBinaryNetworkAddress();
 
     // Seta quanto tempo o socket vai ficar esperando receber um pacote (se não utilizar essa função ele vai esperar indefinidamente)
-    void setSocketTimeout(int timeMS);
+    void setSocketTimeoutMS(int time);
     // Define que o socket irá receber ou não pacotes em broadcast. Utilizado pelos clientes
     void setSocketBroadcastToTrue();
     void setSocketBroadcastToFalse();

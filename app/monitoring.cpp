@@ -7,7 +7,7 @@ void MonitoringSS::start(){
         monitoringSocket.bindSocket();
     }
     else{ // Client 
-        monitoringSocket.setSocketTimeout(100); 
+        monitoringSocket.setSocketTimeoutMS(100); 
     }
     WOLSubsystem::start();
 };
@@ -113,14 +113,6 @@ void MonitoringSS::sendSleepStatusPackets(struct sockaddr_in managerAddrIn){
 
     // Manda o pacote de sleepStatus enquanto não recebe confirmação e não há timeOut
     while(!timerExpired && !replied && isRunning()){
-        auto currentTime = std::chrono::steady_clock::now();
-        auto elapsedTime = std::chrono::duration_cast<std::chrono::seconds>(currentTime - startTime);
-
-        if(elapsedTime >= timeout) {
-            timerExpired = true;
-        }
-
-
         monitoringSocket.sendPacketToServer(&sendPacket, DIRECT_TO_SERVER, &managerAddrIn);
 
         monitoringSocket.receivePacketFromClients(&recvPacket);
@@ -129,34 +121,31 @@ void MonitoringSS::sendSleepStatusPackets(struct sockaddr_in managerAddrIn){
             std::cout << "Recebi um pacote do cliente com o status awake" << std::endl;
             replied = true;
         }
+        auto currentTime = std::chrono::steady_clock::now();
+        auto elapsedTime = std::chrono::duration_cast<std::chrono::seconds>(currentTime - startTime);
+
+        if(elapsedTime >= timeout) {
+            timerExpired = true;
+        }
     }
     // Caso tenha timeOut atualiza o status para sleep do contrário atualiza para awake
-    if (timerExpired && !replied){
-        std::string message;
-        char ipStr[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &managerAddrIn.sin_addr, ipStr, INET_ADDRSTRLEN);
-        message.append("UPDATE_CLIENT_STATUS");
-        message.append("&");
-        message.append(ipStr);
-        message.append("&");
-        message.append(std::to_string(managerAddrIn.sin_port));
-        message.append("&");
-        message.append("awake");
-        mailBox.writeMessage("M_IN2", message);
-    }
-    else {
-        std::string message;
-        char ipStr[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &managerAddrIn.sin_addr, ipStr, INET_ADDRSTRLEN);
-        message.append("UPDATE_CLIENT_STATUS");
-        message.append("&");
-        message.append(ipStr);
-        message.append("&");
-        message.append(std::to_string(managerAddrIn.sin_port));
-        message.append("&");
+    std::string message;
+    char ipStr[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &managerAddrIn.sin_addr, ipStr, INET_ADDRSTRLEN);
+    message.append("UPDATE_CLIENT_STATUS");
+    message.append("&");
+    message.append(ipStr);
+    message.append("&");
+    message.append(std::to_string(managerAddrIn.sin_port));
+    message.append("&");
+    
+    if (timerExpired && !replied)
         message.append("asleep");
-        mailBox.writeMessage("M_IN2", message);
-    }
+    
+    else if (replied)
+        message.append("awake");
+    
+    mailBox.writeMessage("M_IN2", message);
 };
 
 // Le a mensagem com a lista de ips clientes da tabela de gerenciamento com formato 17.172.224.47&17.172.224.48&17.172.224.49
