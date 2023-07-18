@@ -35,10 +35,7 @@ void initMailboxes(DiscoverySS& discoverySS, ManagementSS& managementSS, Interfa
     // Reader: Interface - Writer: Discovery: 
     connectMailboxes(interfaceSS.getMailbox(), "I_IN <- D_OUT", discoverySS.getMailbox(), "D_OUT -> I_IN");
 
-    // Reader: Monitoring - Writer: Management
-    connectMailboxes(monitoringSS.getMailbox(), "MO_IN <- M_OUT", managementSS.getMailbox(), "M_OUT -> MO_IN");
-
-    // Reader: Monitoring - Writer: Discovery (PARA DEBUG)
+    // Reader: Monitoring - Writer: Discovery 
     connectMailboxes(monitoringSS.getMailbox(), "MO_IN <- D_OUT", discoverySS.getMailbox(), "D_OUT -> MO_IN");
 
     // Reader: Discovery - Writer: Interface 
@@ -68,14 +65,13 @@ int main(int argc, char *argv[])
 
     initMailboxes(discoverySS, managementSS, interfaceSS, monitoringSS);
 
-
     discoverySS.start();
     managementSS.start();
     monitoringSS.start();
     interfaceSS.start();
 
-    // Executa enquanto todos os subsistemas estão rodando
-    while(!stopExecution && discoverySS.isRunning() && managementSS.isRunning() && monitoringSS.isRunning() && interfaceSS.isRunning()){
+    // Somente a interface pode encerrar o programa
+    while(!stopExecution && interfaceSS.isRunning()){
 
     }
 
