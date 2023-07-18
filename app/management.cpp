@@ -1,29 +1,27 @@
 #include "management.h"
 
-void managementSubsystemThread(){
-    std::cout << "Eu sou o subsistema de gerenciamento!" << std::endl;
-    
-    while(true){
-        std::cout << "2";
-    }
-
-
+void ManagementSS::start(){
+    WOLSubsystem::start();
 }
 
 void ManagementSS::run(){
     while(isRunning()){
-        if(!mailBox.isEmpty("D_OUT")){
+        while(!mailBox.isEmpty("D_OUT -> M_IN")){
             std::string msg;
-            mailBox.readMessage("D_OUT", msg);
+            mailBox.readMessage("D_OUT -> M_IN", msg);
             std::cout << "Mensagem de DISCOVERY: " << msg << std::endl; 
         }
-        if(!mailBox.isEmpty("MO_OUT")){
+        while(!mailBox.isEmpty("MO_OUT -> M_IN")){
             std::string msg;
-            mailBox.readMessage("MO_OUT", msg);
+            mailBox.readMessage("MO_OUT -> M_IN", msg);
             std::cout << "Mensagem de MONITORING: " << msg << std::endl; 
         }
     }
 }
+
+// void ManagementSS::stop(){
+//     
+// }
 
 void WOLTable::printToConsole(){
     //https://stackoverflow.com/questions/26281979/c-loop-through-map

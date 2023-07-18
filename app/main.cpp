@@ -21,19 +21,29 @@ bool isManager(int argc){
 
 void initMailboxes(DiscoverySS& discoverySS, ManagementSS& managementSS, InterfaceSS& interfaceSS, MonitoringSS& monitoringSS){
     // Reader: Management - Writer: Discovery
-    connectMailboxes(managementSS.getMailbox(), "M_IN", discoverySS.getMailbox(), "D_OUT");
+    connectMailboxes(managementSS.getMailbox(), "M_IN <- D_OUT", discoverySS.getMailbox(), "D_OUT -> M_IN");
 
     // Reader: Management - Writer: Monitoring
-    connectMailboxes(managementSS.getMailbox(), "M_IN2", monitoringSS.getMailbox(), "MO_OUT");
+    connectMailboxes(managementSS.getMailbox(), "M_IN <- MO_OUT", monitoringSS.getMailbox(), "MO_OUT -> M_IN");
 
-    // Reader: Monitoring - Writer: Discovery
-    connectMailboxes(monitoringSS.getMailbox(), "MO_IN", discoverySS.getMailbox(), "D2_OUT");
+    // Reader: Management - Writer: Interface
+    connectMailboxes(managementSS.getMailbox(), "M_IN <- I_OUT", interfaceSS.getMailbox(), "I_OUT -> M_IN");
 
-    // Reader: Discovery - Writer: Interface 
-    connectMailboxes(discoverySS.getMailbox(), "D_IN", interfaceSS.getMailbox(), "I_OUT");
+    // Reader: Interface - Writer: Management
+    connectMailboxes(interfaceSS.getMailbox(), "I_IN <- M_OUT", managementSS.getMailbox(), "M_OUT -> I_IN");
 
     // Reader: Interface - Writer: Discovery: 
-    connectMailboxes(interfaceSS.getMailbox(), "I_IN", discoverySS.getMailbox(), "D3_OUT");
+    connectMailboxes(interfaceSS.getMailbox(), "I_IN <- D_OUT", discoverySS.getMailbox(), "D_OUT -> I_IN");
+
+    // Reader: Monitoring - Writer: Management
+    connectMailboxes(monitoringSS.getMailbox(), "MO_IN <- M_OUT", managementSS.getMailbox(), "M_OUT -> MO_IN");
+
+    // Reader: Monitoring - Writer: Discovery (PARA DEBUG)
+    connectMailboxes(monitoringSS.getMailbox(), "MO_IN <- D_OUT", discoverySS.getMailbox(), "D_OUT -> MO_IN");
+
+    // Reader: Discovery - Writer: Interface 
+    connectMailboxes(discoverySS.getMailbox(), "D_IN <- I_OUT", interfaceSS.getMailbox(), "I_OUT -> D_IN");
+    
 }
 
 
@@ -58,18 +68,19 @@ int main(int argc, char *argv[])
 
     initMailboxes(discoverySS, managementSS, interfaceSS, monitoringSS);
 
+
     discoverySS.start();
     managementSS.start();
     monitoringSS.start();
     interfaceSS.start();
 
     // Executa enquanto todos os subsistemas estão rodando
-    while(!stopExecution && interfaceSS.isRunning() && discoverySS.isRunning() && managementSS.isRunning()/* && monitoringSS.isRunning()*/){
+    while(!stopExecution && discoverySS.isRunning() && managementSS.isRunning() && monitoringSS.isRunning() && interfaceSS.isRunning()){
 
     }
 
-    managementSS.stop();
     discoverySS.stop();
+    managementSS.stop();
     monitoringSS.stop();
     interfaceSS.stop();
     std::cout << "FINALIZADO!" << std::endl;

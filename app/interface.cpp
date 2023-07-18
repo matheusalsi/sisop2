@@ -11,8 +11,8 @@ void InterfaceSS::userInputInterface(){
         ; // parsear para WAKEONLAN
     else if (input == "EXIT"){
         if (!isManager()){
-            mailBox.writeMessage("D_IN", input); // Participante avisa para o seu discovery que vai sair
-            while(mailBox.isEmpty("D3_OUT")){ // Manager espera o seu discovery avisar que o participante foi removido da tabela
+            mailBox.writeMessage("D_IN <- I_OUT", input); // Participante avisa para o seu discovery que vai sair
+            while(mailBox.isEmpty("D_OUT -> I_IN")){ // Manager espera o seu discovery avisar que o participante foi removido da tabela
                 std::cout << "Esperando confirmação de saída do meu discovery" << std::endl;; // Espera chegar a confirmação 
                 std::this_thread::sleep_for(std::chrono::milliseconds(500));
             }
@@ -42,7 +42,7 @@ void InterfaceSS::run(){
     }
 }
 
-void InterfaceSS::printInterface(){
-    std::system("clear"); // Limpa tela (linux)
-    table.printToConsole(); // Exibe tabela
-}
+// void InterfaceSS::printInterface(){
+//     std::system("clear"); // Limpa tela (linux)
+//     table.printToConsole(); // Exibe tabela
+// }

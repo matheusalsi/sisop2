@@ -57,7 +57,7 @@ class ManagementSS : public WOLSubsystem{
 
     public:
     void start();
-    void stop();
+    // void stop();
     void run();
 
     ManagementSS(bool isManager) : WOLSubsystem(isManager) {}

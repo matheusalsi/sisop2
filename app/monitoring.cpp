@@ -26,17 +26,16 @@ void MonitoringSS::run(){
             #endif
             std::this_thread::sleep_for(std::chrono::seconds(5));
             
-            if (!mailBox.isEmpty("D2_OUT")){
-                while (!mailBox.isEmpty("D2_OUT")){ // Pega todas as mensagens da caixa do discovery (vai ser gerenciamento)
+            if (!mailBox.isEmpty("D_OUT -> MO_IN")){
+                while (!mailBox.isEmpty("D_OUT -> MO_IN")){ // Pega todas as mensagens da caixa do discovery (vai ser gerenciamento)
                     std::string messageNewClientIP;
                     if (messageClientsIp.size() > 0) 
                         messageClientsIp.append("&");
-                    mailBox.readMessage("D2_OUT", messageNewClientIP);
+                    mailBox.readMessage("D_OUT -> MO_IN", messageNewClientIP);
                     messageClientsIp.append(messageNewClientIP);
                 }
                 setIpList(ipList, messageClientsIp);
             }
-            
             else if (ipList.size() == 0) {
                 std::cout << "Não há clientes para monitorar" << std::endl;
                 std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -150,7 +149,7 @@ void MonitoringSS::sendSleepStatusPackets(struct sockaddr_in managerAddrIn){
     else if (replied)
         message.append("awake");
     
-    mailBox.writeMessage("M_IN2", message);
+    mailBox.writeMessage("M_IN <- MO_OUT", message);
 };
 
 // Le a mensagem com a lista de ips clientes da tabela de gerenciamento com formato 17.172.224.47&17.172.224.48&17.172.224.49

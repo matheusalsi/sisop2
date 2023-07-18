@@ -30,7 +30,7 @@ void DiscoverySS::run(){
         message.append(getHostname());
         message.append("&");
         message.append(getMACAddress());
-        mailBox.writeMessage("M_IN", message);
+        mailBox.writeMessage("M_IN <- D_OUT", message);
     }
 
     while(isRunning()){
@@ -74,12 +74,12 @@ void DiscoverySS::run(){
                 message.append(ipStr);
                 message.append("&");
                 message.append(macAndHostname);
-                mailBox.writeMessage("M_IN", message);
+                mailBox.writeMessage("M_IN <- D_OUT", message);
 
 
                 #ifdef DEBUG
                 // Envia mensagem para o monitoramento adicionando o ip do cliente a lista
-                mailBox.writeMessage("MO_IN", ipStr);
+                mailBox.writeMessage("MO_IN <- D_OUT", ipStr);
                 #endif
 
             }
@@ -100,7 +100,7 @@ void DiscoverySS::run(){
                 messageExit.append("REMOVE_CLIENT");
                 messageExit.append("&");
                 messageExit.append(ipStr);
-                mailBox.writeMessage("M_IN", messageExit);
+                mailBox.writeMessage("M_IN <- D_OUT", messageExit);
             }
     
         }
@@ -108,11 +108,11 @@ void DiscoverySS::run(){
             sockaddr_in serverAddrIn;
             if(foundManager && !hasLeft){ // Verifica se é necessário mandar packet informando saída do sistema
 
-                while (mailBox.isEmpty("I_OUT")){ // Espera chegar alguma mensagem na caixa de mensagens
+                while (mailBox.isEmpty("I_OUT -> D_IN")){ // Espera chegar alguma mensagem na caixa de mensagens
                     std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 }
                 std::string messageInterfaceLeave;
-                mailBox.readMessage("I_OUT", messageInterfaceLeave);
+                mailBox.readMessage("I_OUT -> D_IN", messageInterfaceLeave);
 
                 std::cout << "Mensagem de INTERFACE: " << messageInterfaceLeave << std::endl; 
 
@@ -139,7 +139,7 @@ void DiscoverySS::run(){
                 #endif
                 std::string messageTableRemoved;
                 messageTableRemoved.append("I_WAS_REMOVED");
-                mailBox.writeMessage("I_IN", messageTableRemoved);
+                mailBox.writeMessage("I_IN <- D_OUT", messageTableRemoved);
                 // setRunning(false); // Discovery encerra a execução do participante
             }
             else if (!hasLeft){ // Busca o manager
