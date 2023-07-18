@@ -18,21 +18,6 @@ void DiscoverySS::stop(){
 
 
 void DiscoverySS::run(){
-    if (isManager()){ // Manda suas informações para salvar na tabela
-        std::string message;
-        char ipStr[INET_ADDRSTRLEN];
-        in_addr ip = discoverySocket.getServerBinaryNetworkAddress();
-        inet_ntop(AF_INET, &ip, ipStr, INET_ADDRSTRLEN);
-        message.append("ADD_MANAGER");
-        message.append("&");
-        message.append(ipStr);
-        message.append("&");
-        message.append(getHostname());
-        message.append("&");
-        message.append(getMACAddress());
-        mailBox.writeMessage("M_IN <- D_OUT", message);
-    }
-
     while(isRunning()){
         packet recvPacket, sendPacket;
 
@@ -54,15 +39,18 @@ void DiscoverySS::run(){
 
             // Checa o tipo de pacote: Adicionar ao sistema ou retirar do sistema
             if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND)){
-                std::string macAndHostname;
-                macAndHostname = recvPacket._payload;
+                std::string macAndHostnameClient;
+                macAndHostnameClient = recvPacket._payload;
 
                 #ifdef DEBUG
                 std::cout << "Estou respondendo o cliente " << buffer << " que quer entrar" << std::endl;
                 #endif
                 
-                // Retorna para o cliente pacote informando que este é o manager
+                // Retorna para o cliente pacote informando que este é o manager, com suas informações de hostname e MAC
                 sendPacket.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND | ACKNOWLEDGE;
+                std::string packetPayload = getHostname() + "&" + getMACAddress();
+                strcpy(sendPacket._payload, packetPayload.c_str());
+
                 discoverySocket.sendPacketToClient(&sendPacket, clientAddrIn);
 
                 // Envia mensagem para o gerenciamento para adicionar o cliente à tabela
@@ -73,7 +61,7 @@ void DiscoverySS::run(){
                 message.append("&");
                 message.append(ipStr);
                 message.append("&");
-                message.append(macAndHostname);
+                message.append(macAndHostnameClient);
                 mailBox.writeMessage("M_IN <- D_OUT", message);
 
 
@@ -152,6 +140,20 @@ void DiscoverySS::run(){
                 if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND | ACKNOWLEDGE)){
                     std::cout << "Recebi um pacote do manager de confirmação que eu entrei!" << std::endl;
                 }
+
+                // Adiciona o manager ao seu gerenciamento
+                std::string macAndHostnameManager;
+                macAndHostnameManager = recvPacket._payload;
+
+                std::string message;
+                char ipStr[INET_ADDRSTRLEN];
+                inet_ntop(AF_INET, &serverAddrIn.sin_addr, ipStr, INET_ADDRSTRLEN);
+                message.append("ADD_MANAGER");
+                message.append("&");
+                message.append(ipStr);
+                message.append("&");
+                message.append(macAndHostnameManager);
+                mailBox.writeMessage("M_IN <- D_OUT", message);
                 
                 foundManager = true; // Seta como true, acaba encerrando a thread "packet sender"
                 packetSenderThreadDiscover.join(); // Espera a thread encerrar
