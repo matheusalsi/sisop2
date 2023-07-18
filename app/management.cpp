@@ -7,31 +7,87 @@
 void ManagementSS::run(){
     while(isRunning()){
         while(!mailBox.isEmpty("D_OUT -> M_IN")){
-            std::string msg;
-            mailBox.readMessage("D_OUT -> M_IN", msg);
-            std::cout << "Mensagem de DISCOVERY: " << msg << std::endl; 
-            // processMessage(msg);
+            std::string message;
+            mailBox.readMessage("D_OUT -> M_IN", message);
+            std::cout << "Mensagem de DISCOVERY: " << message << std::endl; 
+
+            std::vector<std::string> messageParameters;
+            std::string messageFunction;
+            getFunctionAndParametersFromMessage(message, messageFunction, messageParameters);
+
+            if (messageFunction == "ADD_CLIENT" || messageFunction == "ADD_MANAGER"){
+                std::string ip = messageParameters[0];
+                std::string hostname = messageParameters[1];
+                std::string mac = messageParameters[2];
+
+                if (!table.addLine(hostname, mac, ip))
+                    std::cout << "Não foi possível adicionar o: " << ip << " à tabela" << std::endl;
+            }
+            else if (messageFunction == "REMOVE_CLIENT"){
+                std::string clientIP = messageParameters[0];
+
+                if (!table.removeLine(clientIP))
+                    std::cout << "Não foi possível remover o: " << clientIP << std::endl;
+            }
+            table.printToConsole();
+            
         }
+
         while(!mailBox.isEmpty("MO_OUT -> M_IN")){
-            std::string msg;
-            mailBox.readMessage("MO_OUT -> M_IN", msg);
-            std::cout << "Mensagem de MONITORING: " << msg << std::endl; 
-            // processMessage(msg);
+            std::string message;
+            mailBox.readMessage("MO_OUT -> M_IN", message);
+            std::cout << "Mensagem de MONITORING: " << message << std::endl; 
+            std::vector<std::string> messageParameters;
+            std::string messageFunction;
+            getFunctionAndParametersFromMessage(message, messageFunction, messageParameters);
+
+            if (messageFunction == "UPDATE_CLIENT_STATUS"){
+                std::string clientIP = messageParameters[0];
+                std::string clientStatus = messageParameters[1];
+
+                table.updateLineStatus(clientIP, clientStatus);
+            }
+            table.printToConsole();
         }
+
         while(!mailBox.isEmpty("I_OUT -> M_IN")){
-            std::string msg;
-            mailBox.readMessage("MO_OUT -> M_IN", msg);
-            std::cout << "Mensagem de MONITORING: " << msg << std::endl; 
-            // processMessage(msg);
+            std::string message;
+            mailBox.readMessage("I_OUT -> M_IN", message);
+            std::cout << "Mensagem de MONITORING: " << message << std::endl; 
+            std::vector<std::string> messageParameters;
+            std::string messageFunction;
+            getFunctionAndParametersFromMessage(message, messageFunction, messageParameters);
         }
+        
     }
+}
+
+
+void ManagementSS::getFunctionAndParametersFromMessage(std::string message, std::string &function, std::vector<std::string> &parameters){
+    std::string delimiter = "&";
+    std::string token;
+    // Pega qual o tipo da função que será chamada
+    int firstDelimiter = message.find(delimiter);
+    function = message.substr(0, firstDelimiter);
+    message.erase(0, firstDelimiter + 1);
+
+    size_t start = 0;
+    size_t end = message.find('&');
+    while (end != std::string::npos) {
+        std::string ip = message.substr(start, end - start);
+        parameters.push_back(ip);
+        start = end + 1;
+        end = message.find('&',start);
+    }
+    std::string lastParameter = message.substr(start);
+    parameters.push_back(lastParameter);
 }
 
 // void ManagementSS::stop(){
 //     
 // }
 
-// void ManagementSS::processMessage(std::string msg){
+// void ManagementSS::processMessage(std::string message){
 
 // }
 
@@ -68,7 +124,7 @@ void WOLTable::printToConsole(){
 
 }
 
-bool WOLTable::addLine(std::string ipaddr, std::string macaddr, std::string hostname){
+bool WOLTable::addLine(std::string hostname, std::string macaddr, std::string ipaddr){
     if(lines.find(ipaddr) != lines.end()){
         return false;
     }
@@ -84,7 +140,7 @@ bool WOLTable::addLine(std::string ipaddr, std::string macaddr, std::string host
 }
 
 bool WOLTable::removeLine(std::string ipaddr){
-    if(lines.find(ipaddr) != lines.end()){
+    if(lines.find(ipaddr) == lines.end()){
         return false;
     }
 
@@ -101,8 +157,8 @@ bool WOLTable::removeLine(std::string ipaddr){
     return true;
 }
 
-void WOLTable::updateLineStatus(std::string ipaddr, bool awake){
-    lines[ipaddr].status = awake ? "AWAKE" : "ASLEEP";
+void WOLTable::updateLineStatus(std::string ipaddr, std::string status){
+    lines[ipaddr].status = status;
 }
 
 

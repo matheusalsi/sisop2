@@ -43,9 +43,9 @@ class WOLTable{
     
     public:
     void printToConsole(); // Imprime a tabela na tela
-    bool addLine(std::string ipaddr, std::string macaddr, std::string hostname); //Adiciona linha contendo info desse ip
+    bool addLine(std::string ipaddr, std::string hostname, std::string macaddr); //Adiciona linha contendo info desse ip
     bool removeLine(std::string ipaddr); // Remove linha contendo info desse ip
-    void updateLineStatus(std::string ipaddr, bool awake); // Atualiza status desse ip
+    void updateLineStatus(std::string ipaddr, std::string status); // Atualiza status desse ip
 
 };
 
@@ -53,7 +53,9 @@ class WOLTable{
 class ManagementSS : public WOLSubsystem{
     private:
     WOLTable table;
-    void setMailBoxVec(std::vector<std::string>& vectorMailBox, std::string messageMailBox);
+   
+    // Retorna em function o nome da função que foi passada para a mensagem, e em parameters os parâmetros que serão utilizados nessa função
+    void getFunctionAndParametersFromMessage(std::string message, std::string& function, std::vector<std::string>& parameters);
 
     public:
     // void start();
