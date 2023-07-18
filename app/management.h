@@ -46,6 +46,7 @@ class WOLTable{
     bool addLine(std::string ipaddr, std::string hostname, std::string macaddr); //Adiciona linha contendo info desse ip
     bool removeLine(std::string ipaddr); // Remove linha contendo info desse ip
     void updateLineStatus(std::string ipaddr, std::string status); // Atualiza status desse ip
+    std::string getMacFromHostname(std::string hostname); // Retorna o MAC address de um hostname (utilizado para fazer o WAKEONLAN pela interface)
 
 };
 

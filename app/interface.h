@@ -14,10 +14,8 @@ class InterfaceSS : public WOLSubsystem{
 
     private:
     void userInputInterface();
-    void handleKeyboardInterruption(int signum);
 
     public:
-    
     InterfaceSS(bool isManager) : WOLSubsystem(isManager) {};
 
     void run();

@@ -7,8 +7,13 @@ void InterfaceSS::userInputInterface(){
     std::cout << "Digite o comando: " << std::endl;
     std::cin >> input;
 
-    if (input == "WAKEUP" && isManager())
-        ; // parsear para WAKEONLAN
+    if (input == "" && isManager()){ // Fazer aqui o WAKEUP hostname
+        /* wakeonlan é chamado com: 
+        std::string wakeonlan = "WAKEONLAN" + mac
+        system(wakeonlan.c_str())
+        */
+       ;
+    }
     else if (input == "EXIT"){
         if (!isManager()){
             mailBox.writeMessage("D_IN <- I_OUT", input); // Participante avisa para o seu discovery que vai sair
@@ -26,19 +31,11 @@ void InterfaceSS::userInputInterface(){
 }
 
 void InterfaceSS::run(){
-    // bool b = true;
-
     while(isRunning()){
         
         userInputInterface();
         // printInterface();
 
-        // // Exemplo
-        // table.addLine("1.1.1.1", "01:01:01:01:01:01", "teste");
-        // table.updateLineStatus("1.1.1.1", b);
-        // b = !b;
-        
-        // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
 }
 

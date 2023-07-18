@@ -21,11 +21,6 @@
 #include "packet.h"
 #include "mailbox.h"
 
-void discoverySubsystemThread();
-void monitoringSubsystemThread();
-void managementSubsystemThread();
-void interfaceSubsystemThread();
-
 
 // Subsistema genérico do WakeOnLan, que roda numa thread própria
 class WOLSubsystem{
