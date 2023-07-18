@@ -1,8 +1,8 @@
 #include "management.h"
 
-void ManagementSS::start(){
-    WOLSubsystem::start();
-}
+// void ManagementSS::start(){
+//     WOLSubsystem::start();
+// }
 
 void ManagementSS::run(){
     while(isRunning()){
@@ -10,17 +10,29 @@ void ManagementSS::run(){
             std::string msg;
             mailBox.readMessage("D_OUT -> M_IN", msg);
             std::cout << "Mensagem de DISCOVERY: " << msg << std::endl; 
+            // processMessage(msg);
         }
         while(!mailBox.isEmpty("MO_OUT -> M_IN")){
             std::string msg;
             mailBox.readMessage("MO_OUT -> M_IN", msg);
             std::cout << "Mensagem de MONITORING: " << msg << std::endl; 
+            // processMessage(msg);
+        }
+        while(!mailBox.isEmpty("I_OUT -> M_IN")){
+            std::string msg;
+            mailBox.readMessage("MO_OUT -> M_IN", msg);
+            std::cout << "Mensagem de MONITORING: " << msg << std::endl; 
+            // processMessage(msg);
         }
     }
 }
 
 // void ManagementSS::stop(){
 //     
+// }
+
+// void ManagementSS::processMessage(std::string msg){
+
 // }
 
 void WOLTable::printToConsole(){

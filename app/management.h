@@ -56,7 +56,7 @@ class ManagementSS : public WOLSubsystem{
     void setMailBoxVec(std::vector<std::string>& vectorMailBox, std::string messageMailBox);
 
     public:
-    void start();
+    // void start();
     // void stop();
     void run();
 
