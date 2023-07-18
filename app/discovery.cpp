@@ -64,11 +64,8 @@ void DiscoverySS::run(){
                 message.append(macAndHostnameClient);
                 mailBox.writeMessage("M_IN <- D_OUT", message);
 
-
-                #ifdef DEBUG
                 // Envia mensagem para o monitoramento adicionando o ip do cliente a lista
-                mailBox.writeMessage("MO_IN <- D_OUT", ipStr);
-                #endif
+                mailBox.writeMessage("MO_IN <- D_OUT", ipStr); 
 
             }
 
@@ -89,6 +86,9 @@ void DiscoverySS::run(){
                 messageExit.append("&");
                 messageExit.append(ipStr);
                 mailBox.writeMessage("M_IN <- D_OUT", messageExit);
+
+                // Envia mensagem para o monitoramento para remover o ip do cliente a lista
+                mailBox.writeMessage("MO_IN <- D_OUT", ipStr); 
             }
     
         }

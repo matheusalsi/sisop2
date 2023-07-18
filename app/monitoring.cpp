@@ -18,25 +18,27 @@ void MonitoringSS::stop(){
 
 void MonitoringSS::run(){
     packet recvPacket, sendPacket;
-    std::string messageClientsIp;
+
     while (isRunning()) {
         if(isManager()){ // Cliente - envia os pacotes de sleep status requests
+            
             #ifdef DEBUG
             std::cout << "Estou enviando um packet em " << MONITORING_PORT << std::endl;
             #endif
             std::this_thread::sleep_for(std::chrono::seconds(5));
             
-            if (!mailBox.isEmpty("D_OUT -> MO_IN")){
-                while (!mailBox.isEmpty("D_OUT -> MO_IN")){ // Pega todas as mensagens da caixa do discovery (vai ser gerenciamento)
-                    std::string messageNewClientIP;
-                    if (messageClientsIp.size() > 0) 
-                        messageClientsIp.append("&");
-                    mailBox.readMessage("D_OUT -> MO_IN", messageNewClientIP);
-                    messageClientsIp.append(messageNewClientIP);
-                }
-                setIpList(ipList, messageClientsIp);
+
+            while (!mailBox.isEmpty("D_OUT -> MO_IN")){ // Pega todas as mensagens da caixa do discovery e adiciona ao conjunto de IPs
+                std::string messageClientIp;
+                mailBox.readMessage("D_OUT -> MO_IN", messageClientIp);
+                
+                if (ipList.find(messageClientIp) == ipList.end()) 
+                    ipList.insert(messageClientIp);
+                else // Caso o discovery mande um IP que já existe no conjunto, é um aviso de que esse cliente saiu do sistema
+                    ipList.erase(messageClientIp);
             }
-            else if (ipList.size() == 0) {
+            
+            if (ipList.size() == 0) {
                 std::cout << "Não há clientes para monitorar" << std::endl;
                 std::this_thread::sleep_for(std::chrono::seconds(1));
                 continue;
@@ -49,9 +51,10 @@ void MonitoringSS::run(){
 
             std::vector<std::thread> packetSenderThreadStatus;
 
-            for(unsigned int i = 0; i < ipList.size(); i++) {
+            
+            for(auto ip: ipList) {
                 char ipStr[INET_ADDRSTRLEN];
-                strcpy(ipStr, this->ipList[i].c_str());
+                strcpy(ipStr, ip.c_str());
                 #ifdef DEBUG
                 std::cout << "Estou enviando status request para o client de ip: " << ipStr << std::endl;
                 #endif
@@ -152,28 +155,28 @@ void MonitoringSS::sendSleepStatusPackets(struct sockaddr_in managerAddrIn){
     mailBox.writeMessage("M_IN <- MO_OUT", message);
 };
 
-// Le a mensagem com a lista de ips clientes da tabela de gerenciamento com formato 17.172.224.47&17.172.224.48&17.172.224.49
-void MonitoringSS::setIpList(std::vector<std::string>& ipList, std::string messageClientsIps){
-    ipList.clear();
+// // Le a mensagem com a lista de ips clientes da tabela de gerenciamento com formato 17.172.224.47&17.172.224.48&17.172.224.49
+// void MonitoringSS::setIpList(std::vector<std::string>& ipList, std::string messageClientsIps){
+//     ipList.clear();
     
-    if (messageClientsIps.find('&') == std::string::npos) {
-        ipList.push_back(messageClientsIps);
-    }
-    else {
-        size_t start = 0;
-        size_t end = messageClientsIps.find('&');
-        while (end != std::string::npos) {
-            std::string ip = messageClientsIps.substr(start, end - start);
-            ipList.push_back(ip);
-            start = end + 1;
-            end = messageClientsIps.find('&',start);
-        }
-        std::string ip = messageClientsIps.substr(start);
-        ipList.push_back(ip);
-    }
-    this->ipList = ipList;
-};
+//     if (messageClientsIps.find('&') == std::string::npos) {
+//         ipList.push_back(messageClientsIps);
+//     }
+//     else {
+//         size_t start = 0;
+//         size_t end = messageClientsIps.find('&');
+//         while (end != std::string::npos) {
+//             std::string ip = messageClientsIps.substr(start, end - start);
+//             ipList.push_back(ip);
+//             start = end + 1;
+//             end = messageClientsIps.find('&',start);
+//         }
+//         std::string ip = messageClientsIps.substr(start);
+//         ipList.push_back(ip);
+//     }
+//     this->ipList = ipList;
+// };
 
-std::vector<std::string> MonitoringSS::getIplist(){
-    return ipList;
-};
+// std::vector<std::string> MonitoringSS::getIplist(){
+//     return ipList;
+// };

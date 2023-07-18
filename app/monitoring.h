@@ -6,6 +6,7 @@
 #include <string>
 #include <chrono>
 #include <atomic>
+#include <set>
 
 #define MONITORING_PORT 7576
 #define IPADDRESS_ROW_WIDTH 15
@@ -16,10 +17,10 @@ class MonitoringSS : public WOLSubsystem {
     private:
     Socket monitoringSocket; // Socket para envio/recepção de packets "Sleep Status Request"
 
-    std::vector<std::string> ipList; // Lista de IPs para monitoramento
+    std::set<std::string> ipList; // Conjunto de IPs para monitoramento
     
-    void setIpList(std::vector<std::string>& ipList, std::string messageClientsIps);
-    std::vector<std::string> getIplist();
+    // void setIpList(std::vector<std::string>& ipList, std::string messageClientsIps);
+    // std::vector<std::string> getIplist();
     
     // Thread que envia e espera pacotes "Sleep Status Request" 
     void sendSleepStatusPackets(struct sockaddr_in managerAddrIn);
@@ -31,8 +32,8 @@ class MonitoringSS : public WOLSubsystem {
 
     MonitoringSS(bool isManager) :
         WOLSubsystem(isManager),
-        monitoringSocket(MONITORING_PORT, false),
-        ipList({})
+        monitoringSocket(MONITORING_PORT, false)
+        // ipList({})
     {};
 
 };
