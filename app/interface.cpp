@@ -31,6 +31,8 @@
 // }
 
 void InterfaceSS::run(){
+    hasTableUpdates = true;
+    std::thread printThread(&InterfaceSS::printInterfaceThread, this);
 
     while(isRunning()){
 
@@ -48,23 +50,46 @@ void InterfaceSS::run(){
         else{
             std::string msg;
             mailBox.readMessage("M_OUT -> I_IN", msg);
-
-            #ifdef DEBUG
-            std::clog << "INTERFACE: ";
-            std::clog << "Mensagem de GERENCIAMENTO: " << msg << std::endl;
-            #endif
-
-            localTable.updateLineFromMessage(msg);
+            handleUpdateMessage(msg);
         }
-        
-
-        //userInputInterface();
-        printInterface();
 
     }
+    printThread.join();
+
 }
 
-void InterfaceSS::printInterface(){
-    std::system("clear"); // Limpa tela (linux)
-    localTable.printToConsole(); // Exibe tabela
+void InterfaceSS::handleUpdateMessage(std::string msg){
+    #ifdef DEBUG
+    std::clog << "INTERFACE: ";
+    std::clog << "Mensagem de GERENCIAMENTO: " << msg << std::endl;
+    #endif
+
+    tableLock.lock();
+    localTable.updateLineFromMessage(msg);
+    hasTableUpdates = true;
+    tableLock.unlock();
+
+}
+
+void InterfaceSS::printInterfaceThread(){
+
+    while(isRunning()){
+        if(!hasTableUpdates){
+            continue;
+        }
+        tableLock.lock();
+
+        // Há atualizações, logo printamos
+        std::system("clear"); // Limpa tela (linux)
+        
+        auto end = std::chrono::system_clock::now();
+        std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+        std::cout << "Última atividade: " << std::ctime(&end_time) << std::endl;
+
+        localTable.printToConsole(); // Exibe tabela
+        
+        hasTableUpdates = false;
+        tableLock.unlock();
+    }
+    
 }
