@@ -71,18 +71,22 @@ void Socket::sendPacketToClient(struct packet* sendPacketServer, struct sockaddr
         std::string errorMsg = "Erro ao enviar um pacote para o servidor na porta " + std::to_string(port);
         throw std::runtime_error(errorMsg);
     }
+
 }
 
-struct sockaddr_in Socket::receivePacketFromClients(struct packet* recvPacketServer){
-    sockaddr_in clientAddrIn;
+bool Socket::receivePacketFromClients(struct packet* recvPacketServer, sockaddr_in& clientAddrIn){
     socklen_t clientLen = sizeof(clientAddrIn);
     int n = recvfrom(socketFD, recvPacketServer, sizeof(struct packet), 0, (struct sockaddr *) &clientAddrIn, &clientLen);
     if (n < 0){
+        if(errno == EAGAIN || errno == EWOULDBLOCK){
+            return false;
+        }
+
         std::string errorMsg = "Erro ao receber um pacote do cliente na porta " + std::to_string(port);
         throw std::runtime_error(errorMsg);
     }
  
-    return clientAddrIn;
+    return true;
 
 } 
 
@@ -109,11 +113,16 @@ void Socket::sendPacketToServer(struct packet* sendPacketClient, int type, struc
     }
 }
 
-struct sockaddr_in Socket::receivePacketFromServer(struct packet* recvPacketClient){
+bool Socket::receivePacketFromServer(struct packet* recvPacketClient){
     int n = recvfrom(socketFD, recvPacketClient, sizeof(struct packet), 0, (struct sockaddr *) &serverAddrIn, &serverLen);
     if (n < 0){
+        if(errno == EAGAIN || errno == EWOULDBLOCK){
+            return false;
+        }
+
+
         std::string errorMsg = "Erro ao receber um pacote do servidor na porta " + std::to_string(port);
         throw std::runtime_error(errorMsg);
     }
-    return serverAddrIn;
+    return true;
 }

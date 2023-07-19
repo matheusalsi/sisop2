@@ -57,11 +57,11 @@ class Socket{
     // Envia um pacote para um cliente
     void sendPacketToClient(struct packet* sendPacketServer, struct sockaddr_in clientAddrIn); 
     // Recebe um pacote de um cliente e retorna as informações do cliente que enviou o pacote
-    struct sockaddr_in receivePacketFromClients(struct packet* recvPacketServer);
+    bool receivePacketFromClients(struct packet* recvPacketServer, sockaddr_in& clientAddrIn);
     // Envia um pacote para o servidor, especificando o tipo de envio
     void sendPacketToServer(struct packet* sendPacketClient, int type,struct sockaddr_in* serverAddrIn);
     // Recebe um pacote do servidor 
-    struct sockaddr_in receivePacketFromServer(struct packet* recvPacketClient);
+    bool receivePacketFromServer(struct packet* recvPacketClient);
     
     
 };

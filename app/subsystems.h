@@ -15,7 +15,7 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <strings.h>
-
+#include <errno.h>
 
 #include "socket.h"
 #include "packet.h"

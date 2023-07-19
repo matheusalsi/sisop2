@@ -2,17 +2,16 @@
 
 void MonitoringSS::start(){
     monitoringSocket.openSocket();
+    monitoringSocket.setSocketTimeoutMS(100); 
 
     if(!isManager()){ // Cliente
         monitoringSocket.bindSocket();
-    }
-    else{ // Server 
-        monitoringSocket.setSocketTimeoutMS(100); 
     }
     WOLSubsystem::start();
 };
 
 void MonitoringSS::stop(){
+    WOLSubsystem::stop();
     monitoringSocket.closeSocket();
 };
 
@@ -22,14 +21,7 @@ void MonitoringSS::run(){
     while (isRunning()) {
         if(isManager()){ // Cliente - envia os pacotes de sleep status requests
             
-            #ifdef DEBUG
-            std::clog << "MONITORING: ";
-            std::clog << "Estou enviando um packet em " << MONITORING_PORT << std::endl;
-            #endif
-            std::this_thread::sleep_for(std::chrono::seconds(5));
-            
-
-            while (!mailBox.isEmpty("D_OUT -> MO_IN")){ // Pega todas as mensagens da caixa do discovery e adiciona ao conjunto de IPs
+            while (isRunning() && !mailBox.isEmpty("D_OUT -> MO_IN")){ // Pega todas as mensagens da caixa do discovery e adiciona ao conjunto de IPs
                 std::string messageClientIp;
                 mailBox.readMessage("D_OUT -> MO_IN", messageClientIp);
                 
@@ -72,6 +64,11 @@ void MonitoringSS::run(){
                 packetSenderThreadStatus.join();
             }
 
+            #ifdef DEBUG
+            std::clog << "MONITORING: ";
+            std::clog << "Encerrei minhas threads " << std::endl;
+            #endif
+
             packetSenderThreadStatus.clear();
         }
         else { // Server - responde os pacotes de sleep status requests
@@ -83,7 +80,10 @@ void MonitoringSS::run(){
 
             // Fica esperando por pacotes do manager
             sockaddr_in managerAddrIn;
-            managerAddrIn = monitoringSocket.receivePacketFromClients(&recvPacket);
+            if(!monitoringSocket.receivePacketFromClients(&recvPacket, managerAddrIn)){
+                // Timeout
+                continue;
+            }
 
             #ifdef DEBUG
             char ipStr[INET_ADDRSTRLEN];
@@ -113,6 +113,7 @@ void MonitoringSS::run(){
 
 void MonitoringSS::sendSleepStatusPackets(struct sockaddr_in managerAddrIn){
     packet sendPacket, recvPacket;
+    sockaddr_in clientAddrin;
     bool replied = false;
     bool timerExpired = false;
     sendPacket.type = SLEEP_STATUS_REQUEST;
@@ -126,7 +127,7 @@ void MonitoringSS::sendSleepStatusPackets(struct sockaddr_in managerAddrIn){
         monitoringSocket.sendPacketToServer(&sendPacket, DIRECT_TO_SERVER, &managerAddrIn);
 
         try {
-            monitoringSocket.receivePacketFromClients(&recvPacket);
+            monitoringSocket.receivePacketFromClients(&recvPacket, clientAddrin);
         } catch(const std::runtime_error& e) {
             #ifdef DEBUG
             std::clog << "MONITORING: ";
