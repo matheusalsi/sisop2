@@ -1,8 +1,10 @@
 #include "mailbox.h"
 
 void connectMailboxes(SubsystemMailBox& in, const char* id1, SubsystemMailBox& out, const char* id2){
-    std::mutex* lock =  new std::mutex;
-    messageDeque* buffer = new messageDeque;
+    auto lock = std::make_shared<std::mutex>();
+    auto buffer = std::make_shared<messageDeque>();
+    // std::mutex* lock =  new std::mutex;
+    // messageDeque* buffer = new messageDeque;
     in.bufferMap[std::string(id2)] = MailBoxBuffer(true, lock, buffer);
     out.bufferMap[std::string(id1)] = MailBoxBuffer(false, lock, buffer);
 }

@@ -25,7 +25,7 @@ struct MailBoxBuffer{
     std::shared_ptr<messageDeque> sharedBuffer; // Buffer compartilhado entre dois SS
 
     MailBoxBuffer() {};
-    MailBoxBuffer(bool input, std::mutex* lock, messageDeque* buffer) :
+    MailBoxBuffer(bool input, std::shared_ptr<std::mutex> lock, std::shared_ptr<messageDeque> buffer) :
     input(input),
     bufferLock(lock),
     sharedBuffer(buffer)
