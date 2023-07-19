@@ -138,8 +138,10 @@ void MonitoringSS::sendSleepStatusPackets(struct sockaddr_in managerAddrIn){
         }
 
         if(recvPacket.type == (SLEEP_STATUS_REQUEST | ACKNOWLEDGE)) {
+            #ifdef DEBUG
             std::clog << "MONITORING: ";
             std::clog << "Recebi um pacote do cliente com o status awake" << std::endl;
+            #endif
             replied = true;
         }
         auto currentTime = std::chrono::steady_clock::now();
