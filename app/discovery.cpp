@@ -29,8 +29,20 @@ void DiscoverySS::run(){
             // Fica esperando por pacotes de algum cliente
             sockaddr_in clientAddrIn;
 
+            /*
             if(!discoverySocket.receivePacketFromClients(&recvPacket, clientAddrIn)){
                 // Timeout
+                continue;
+            }
+            */
+           
+            try{
+                discoverySocket.receivePacketFromClients(&recvPacket, clientAddrIn);
+            } catch(const std::runtime_error& e) {
+                #ifdef DEBUG
+                std::clog << "DISCOVERY: ";
+                std::clog << "Exceção capturada na thread de receber pacote " << e.what() << std::endl;
+                #endif
                 continue;
             }
 
@@ -116,8 +128,21 @@ void DiscoverySS::run(){
                 // Envia pacote
                 sendSleepExitPackets(serverAddrIn);
                 // Espera resposta do servidor
+
+                //*******************************************************
+                /*
                 if(!discoverySocket.receivePacketFromServer(&recvPacket)){
                     // Timeout
+                    continue;
+                }
+                */
+                try{
+                    discoverySocket.receivePacketFromServer(&recvPacket);
+                } catch(const std::runtime_error& e) {
+                    #ifdef DEBUG
+                    std::clog << "DISCOVERY: ";
+                    std::clog << "Exceção capturada na thread de confirmação da saída! " << e.what() << std::endl;
+                    #endif
                     continue;
                 }
 
@@ -146,8 +171,21 @@ void DiscoverySS::run(){
                 // Envia pacote
                 sendSleepDiscoverPackets();
                 // Espera resposta do servidor
+                //***************************************************************
+                /*
                 if(!discoverySocket.receivePacketFromServer(&recvPacket)){
                     // Timeout
+                    continue;
+                }
+                */
+
+                try{
+                    discoverySocket.receivePacketFromServer(&recvPacket);
+                } catch(const std::runtime_error& e) {
+                    #ifdef DEBUG
+                    std::clog << "DISCOVERY: ";
+                    std::clog << "Exceção capturada na thread de confirmação que eu entrei! " << e.what() << std::endl;
+                    #endif
                     continue;
                 }
                 
