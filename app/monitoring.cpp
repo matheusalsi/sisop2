@@ -128,26 +128,25 @@ void MonitoringSS::run(){
 
 };
 
-void MonitoringSS::sendSleepStatusPackets(struct sockaddr_in managerAddrIn){
+void MonitoringSS::sendSleepStatusPackets(struct sockaddr_in clientAddrIn){
     packet sendPacketSleepStatus, recvPacketSleepStatus;
-    sockaddr_in clientAddrin;
+    sockaddr_in managerAddrin;
     bool asleep = true;
     sendPacketSleepStatus.type = SLEEP_STATUS_REQUEST;
 
     // Manda o pacote de sleepStatus enquanto não recebe confirmação e não há timeOut
-    monitoringSocket.sendPacketToServer(&sendPacketSleepStatus, DIRECT_TO_SERVER, &managerAddrIn);
+    monitoringSocket.sendPacketToServer(&sendPacketSleepStatus, DIRECT_TO_SERVER, &clientAddrIn);
 
     try {
-    if (monitoringSocket.receivePacketFromClients(&recvPacketSleepStatus, clientAddrin)){
-
-        if(recvPacketSleepStatus.type == (SLEEP_STATUS_REQUEST | ACKNOWLEDGE)) {
-            #ifdef DEBUG
-            std::clog << "MONITORING: ";
-            std::clog << "Recebi um pacote do cliente com o status awake" << std::endl;
-            #endif
-            asleep = false;
-        } 
-    }
+        if (monitoringSocket.receivePacketFromClients(&recvPacketSleepStatus, managerAddrin)){
+            if(recvPacketSleepStatus.type == (SLEEP_STATUS_REQUEST | ACKNOWLEDGE)) {
+                #ifdef DEBUG
+                std::clog << "MONITORING: ";
+                std::clog << "Recebi um pacote do cliente com o status awake" << std::endl;
+                #endif
+                asleep = false;
+            } 
+        }
     } 
     catch(const std::runtime_error& e) {
         #ifdef DEBUG
@@ -160,7 +159,7 @@ void MonitoringSS::sendSleepStatusPackets(struct sockaddr_in managerAddrIn){
     // Caso tenha timeOut atualiza o status para sleep do contrário atualiza para awake
     std::string message;
     char ipStr[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &managerAddrIn.sin_addr, ipStr, INET_ADDRSTRLEN);
+    inet_ntop(AF_INET, &clientAddrIn.sin_addr, ipStr, INET_ADDRSTRLEN);
     message.append("UPDATE_CLIENT_STATUS");
     message.append("&");
     message.append(ipStr);
