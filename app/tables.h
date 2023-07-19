@@ -53,9 +53,7 @@ class WOLTable{
     std::string getMacFromHostname(std::string hostname); // Retorna o MAC address de um hostname (utilizado para fazer o WAKEONLAN pela interface)
     void appendLineAsMessage(std::string ipaddr, std::string& msg); // Obtém uma linha em formato de mensagem;
     void updateLineFromMessage(std::string& msg); // Adiciona informações a uma linha através de mensagem
-
+    bool hasIP(std::string &ipaddr); // Indica se o IP está na tabela
 };
-
-
 
 #endif // __TABLES_H__

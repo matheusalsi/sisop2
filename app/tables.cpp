@@ -17,11 +17,11 @@ void WOLTable::printToConsole(){
     std::map<std::string, WOLTableLine>::iterator it;
 
     // Cabeçalho
-    std::cout << std::setw(IPADDRESS_ROW_WIDTH) << "ENDERECO IP";
-    std::cout << " | ";
     std::cout << std::setw(hostname_max_len) << "HOSTNAME";
     std::cout << " | ";
     std::cout << std::setw(MACADDRESS_ROW_WIDTH) << "ENDERECO MAC";
+    std::cout << " | ";
+    std::cout << std::setw(IPADDRESS_ROW_WIDTH) << "ENDERECO IP";
     std::cout << " | ";
     std::cout << std::setw(STATUS_ROW_WIDTH) << "STATUS";
 
@@ -29,11 +29,11 @@ void WOLTable::printToConsole(){
 
     // Linhas
     for(it = lines.begin(); it != lines.end(); it++){
-        std::cout << std::setw(IPADDRESS_ROW_WIDTH) << it->second.ip;
-        std::cout << " | ";
         std::cout << std::setw(hostname_max_len) << it->second.hostname;
         std::cout << " | ";
         std::cout << std::setw(MACADDRESS_ROW_WIDTH) << it->second.mac;
+        std::cout << " | ";
+        std::cout << std::setw(IPADDRESS_ROW_WIDTH) << it->second.ip;
         std::cout << " | ";
         std::cout << std::setw(STATUS_ROW_WIDTH) << it->second.status;
         std::cout << std::endl;
@@ -91,12 +91,27 @@ void WOLTable::appendLineAsMessage(std::string ipaddr, std::string& msg){
 }
 
 void WOLTable::updateLineFromMessage(std::string& msg){
-    std::string body = msg.substr(msg.find('&')+1); // Remove cabeçalho
+    int pos = msg.find('&');
+    std::string head = msg.substr(0, pos);
+
+    std::string body = msg.substr(pos+1); // Remove cabeçalho
     std::stringstream ss(body);
     std::string ipaddr; 
     std::getline(ss, ipaddr, '&'); // IP
-    lines[ipaddr].ip = ipaddr;
-    std::getline(ss, lines[ipaddr].hostname, '&'); // HOSTNAME
-    std::getline(ss, lines[ipaddr].mac, '&'); // MAC
-    std::getline(ss, lines[ipaddr].status, '&'); // STATUS
+    
+    // Realiza atualização ou remoção
+    if(head ==  "TABLE_REMOVE"){
+        removeLine(ipaddr);
+        return;
+    }
+    else{
+        lines[ipaddr].ip = ipaddr;
+        std::getline(ss, lines[ipaddr].hostname, '&'); // HOSTNAME
+        std::getline(ss, lines[ipaddr].mac, '&'); // MAC
+        std::getline(ss, lines[ipaddr].status, '&'); // STATUS
+    }
+}
+
+bool WOLTable::hasIP(std::string& ipaddr){
+    return (lines.find(ipaddr) != lines.end());
 }

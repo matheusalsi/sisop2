@@ -24,11 +24,17 @@ void ManagementSS::run(){
                 std::string hostname = messageParameters[1];
                 std::string mac = messageParameters[2];
 
+                // Adiciona IP aos modificados
+                recentlyUpdatedIPs.insert(ip);
+
                 if (!table.addLine(hostname, mac, ip))
                     std::cout << "Não foi possível adicionar o: " << ip << " à tabela" << std::endl;
             }
             else if (messageFunction == "REMOVE_CLIENT"){
                 std::string clientIP = messageParameters[0];
+
+                // Adiciona IP aos modificados
+                recentlyUpdatedIPs.insert(clientIP);
 
                 if (!table.removeLine(clientIP))
                     std::cout << "Não foi possível remover o: " << clientIP << std::endl;
@@ -76,8 +82,17 @@ void ManagementSS::run(){
             // Interface requisitando info sobre estado da tabela (houve atualizações?)
             if(messageFunction == "REQUEST_UPDATE"){
                 if(recentlyUpdatedIPs.size() > 0){
-                    std::string msg = "TABLE_UPDATE&";
+                    std::string msg;
                     for(auto ip: recentlyUpdatedIPs){
+                        // Checa se IP foi removido
+                        if(table.hasIP(ip)){
+                            msg = "TABLE_UPDATE&";
+                        }
+                        else{
+                            msg = "TABLE_REMOVE&";
+                        }
+
+
                         table.appendLineAsMessage(ip, msg);
                     }
 

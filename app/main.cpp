@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
     interfaceSS.start();
 
     // Somente a interface pode encerrar o programa
-    while(!stopExecution && interfaceSS.isRunning()){
+    while(!stopExecution){
 
     }
 
