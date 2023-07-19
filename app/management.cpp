@@ -6,10 +6,14 @@
 
 void ManagementSS::run(){
     while(isRunning()){
-        while(!mailBox.isEmpty("D_OUT -> M_IN")){
+        if(!mailBox.isEmpty("D_OUT -> M_IN")){
             std::string message;
             mailBox.readMessage("D_OUT -> M_IN", message);
-            std::cout << "Mensagem de DISCOVERY: " << message << std::endl; 
+            
+            #ifdef DEBUG
+            std::clog << "GERENCIAMENTO: ";
+            std::clog << "Mensagem de DISCOVERY: " << message << std::endl; 
+            #endif
 
             std::vector<std::string> messageParameters;
             std::string messageFunction;
@@ -29,14 +33,19 @@ void ManagementSS::run(){
                 if (!table.removeLine(clientIP))
                     std::cout << "Não foi possível remover o: " << clientIP << std::endl;
             }
-            table.printToConsole();
+
             
         }
 
-        while(!mailBox.isEmpty("MO_OUT -> M_IN")){
+        if(!mailBox.isEmpty("MO_OUT -> M_IN")){
             std::string message;
             mailBox.readMessage("MO_OUT -> M_IN", message);
-            std::cout << "Mensagem de MONITORING: " << message << std::endl; 
+            
+            #ifdef DEBUG
+            std::clog << "GERENCIAMENTO: ";
+            std::clog << "Mensagem de MONITORING: " << message << std::endl; 
+            #endif
+
             std::vector<std::string> messageParameters;
             std::string messageFunction;
             getFunctionAndParametersFromMessage(message, messageFunction, messageParameters);
@@ -44,19 +53,42 @@ void ManagementSS::run(){
             if (messageFunction == "UPDATE_CLIENT_STATUS"){
                 std::string clientIP = messageParameters[0];
                 std::string clientStatus = messageParameters[1];
-
-                table.updateLineStatus(clientIP, clientStatus);
+                if(table.checkLineStatusDiff(clientIP, clientStatus)){
+                    table.updateLineStatus(clientIP, clientStatus);
+                    // Atualiza set de ips com atualizações não informadas à interface
+                    recentlyUpdatedIPs.insert(clientIP);
+                }
             }
-            table.printToConsole();
+
         }
 
-        while(!mailBox.isEmpty("I_OUT -> M_IN")){
+        if(!mailBox.isEmpty("I_OUT -> M_IN")){
             std::string message;
             mailBox.readMessage("I_OUT -> M_IN", message);
-            std::cout << "Mensagem de MONITORING: " << message << std::endl; 
+            #ifdef DEBUG
+            std::clog << "GERENCIAMENTO: ";
+            std::clog << "Mensagem de INTERFACE: " << message << std::endl; 
+            #endif
             std::vector<std::string> messageParameters;
             std::string messageFunction;
             getFunctionAndParametersFromMessage(message, messageFunction, messageParameters);
+
+            // Interface requisitando info sobre estado da tabela (houve atualizações?)
+            if(messageFunction == "REQUEST_UPDATE"){
+                if(recentlyUpdatedIPs.size() > 0){
+                    std::string msg = "TABLE_UPDATE&";
+                    for(auto ip: recentlyUpdatedIPs){
+                        table.appendLineAsMessage(ip, msg);
+                    }
+
+                    // IPs não são mais considerados como "recentemente atualizados"
+                    recentlyUpdatedIPs.clear();
+                    // Envia resposta
+                    mailBox.writeMessage("I_IN <- M_OUT", msg);
+                }
+
+            }
+
         }
         
     }
@@ -90,75 +122,5 @@ void ManagementSS::getFunctionAndParametersFromMessage(std::string message, std:
 // void ManagementSS::processMessage(std::string message){
 
 // }
-
-void WOLTable::printToConsole(){
-    //https://stackoverflow.com/questions/26281979/c-loop-through-map
-    std::map<std::string, WOLTableLine>::iterator it;
-
-    // Cabeçalho
-    std::cout << std::setw(hostname_max_len) << "HOSTNAME";
-    std::cout << " | ";
-    std::cout << std::setw(MACADDRESS_ROW_WIDTH) << "ENDERECO MAC";
-    std::cout << " | ";
-    std::cout << std::setw(IPADDRESS_ROW_WIDTH) << "ENDERECO IP";
-    std::cout << " | ";
-    std::cout << std::setw(STATUS_ROW_WIDTH) << "STATUS";
-
-    std::cout << std::endl;
-
-    // Linhas
-    for(it = lines.begin(); it != lines.end(); it++){
-        std::cout << std::setw(hostname_max_len) << it->second.hostname;
-        std::cout << " | ";
-        std::cout << std::setw(MACADDRESS_ROW_WIDTH) << it->second.mac;
-        std::cout << " | ";
-        std::cout << std::setw(IPADDRESS_ROW_WIDTH) << it->second.ip;
-        std::cout << " | ";
-        std::cout << std::setw(STATUS_ROW_WIDTH) << it->second.status;
-        std::cout << std::endl;
-    }
-
-    // Fim
-    std::cout << std::setfill('-') << std::setw(hostname_max_len + MACADDRESS_ROW_WIDTH + IPADDRESS_ROW_WIDTH + STATUS_ROW_WIDTH + 9) << '-' << std::endl;
-    std::cout << std::setfill(' ') << std::setw(1);
-
-}
-
-bool WOLTable::addLine(std::string hostname, std::string macaddr, std::string ipaddr){
-    if(lines.find(ipaddr) != lines.end()){
-        return false;
-    }
-
-    // Atualiza tamanho da coluna hostname
-    int hostname_len = hostname.length();
-    if(hostname_len >  hostname_max_len){
-        hostname_max_len = hostname_len;
-    }
-
-    lines[ipaddr] = WOLTableLine(hostname, macaddr, ipaddr, "N/A");
-    return true;
-}
-
-bool WOLTable::removeLine(std::string ipaddr){
-    if(lines.find(ipaddr) == lines.end()){
-        return false;
-    }
-
-    lines.erase(ipaddr);
-
-    // Atualiza tamanho do hostname. Por default, a chave maior está no fim.
-    if(lines.empty()){
-        hostname_max_len = HOSTNAME_ROW_WIDTH;
-    }
-    else{
-        hostname_max_len = lines.rbegin()->second.hostname.length();
-    }
-
-    return true;
-}
-
-void WOLTable::updateLineStatus(std::string ipaddr, std::string status){
-    lines[ipaddr].status = status;
-}
 
 

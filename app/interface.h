@@ -7,13 +7,14 @@
 #include <map>
 #include <string>
 #include <iomanip>
-#include <signal.h>
+#include "tables.h"
 
 // Subsistema de interface
 class InterfaceSS : public WOLSubsystem{
 
     private:
-    void userInputInterface();
+    // Tabela do subsistema para consistência entre prints
+    WOLTable localTable;
 
     public:
     InterfaceSS(bool isManager) : WOLSubsystem(isManager) {};
