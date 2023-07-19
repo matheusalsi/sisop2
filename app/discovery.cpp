@@ -112,9 +112,11 @@ void DiscoverySS::run(){
             sockaddr_in serverAddrIn;
             if(foundManager && !hasLeft){ // Verifica se é necessário mandar packet informando saída do sistema
 
-                while (mailBox.isEmpty("I_OUT -> D_IN")){ // Espera chegar alguma mensagem na caixa de mensagens
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                // Espera chegar alguma mensagem na caixa de mensagens
+                if(mailBox.isEmpty("I_OUT -> D_IN")){
+                    continue;
                 }
+   
                 std::string messageInterfaceLeave;
                 mailBox.readMessage("I_OUT -> D_IN", messageInterfaceLeave);
 
