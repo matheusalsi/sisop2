@@ -21,14 +21,27 @@ void MonitoringSS::run(){
     while (isRunning()) {
         if(isManager()){ // Cliente - envia os pacotes de sleep status requests
             
-            while (isRunning() && !mailBox.isEmpty("D_OUT -> MO_IN")){ // Pega todas as mensagens da caixa do discovery e adiciona ao conjunto de IPs
-                std::string messageClientIp;
-                mailBox.readMessage("D_OUT -> MO_IN", messageClientIp);
+            // Sincronização com gerenciamento
+            while (isRunning() && !mailBox.isEmpty("M_OUT -> MO_IN")){
+                std::string messageIpUpdates;
+                mailBox.readMessage("M_OUT -> MO_IN", messageIpUpdates);
+                #ifdef DEBUG
+                std::clog << "MONITORING: ";
+                std::clog << "Mensagem de GERENCIAMENTO: " << messageIpUpdates << std::endl;
+                #endif
                 
-                if (ipList.find(messageClientIp) == ipList.end()) 
-                    ipList.insert(messageClientIp);
-                else // Caso o discovery mande um IP que já existe no conjunto, é um aviso de que esse cliente saiu do sistema
-                    ipList.erase(messageClientIp);
+
+                char type = messageIpUpdates[0]; // Primeiro caractere determina se IP está entrando ou saíndo
+                std::string ip = messageIpUpdates.substr(1);
+
+                // Atualiza ips a monitorar
+                if(type == '+'){
+                    ipList.insert(ip);
+                }
+                else{
+                    ipList.erase(ip);
+                }
+
             }
             
             if (ipList.size() == 0) {
@@ -69,7 +82,10 @@ void MonitoringSS::run(){
             #ifdef DEBUG
             std::clog << "MONITORING: ";
             std::clog << "Encerrei minhas threads " << std::endl;
+            std::clog << "Vou dormir por 2 segundos" << std::endl;
             #endif
+
+            std::this_thread::sleep_for(std::chrono::seconds(2));
 
             packetSenderThreadStatus.clear();
         }

@@ -92,16 +92,14 @@ void WOLTable::appendLineAsMessage(std::string ipaddr, std::string& msg){
 }
 
 void WOLTable::updateLineFromMessage(std::string& msg){
-    int pos = msg.find('&');
-    std::string head = msg.substr(0, pos);
+    char type = msg[0]; // Adição ou remoção
 
-    std::string body = msg.substr(pos+1); // Remove cabeçalho
+    std::string body = msg.substr(1); // Remove cabeçalho
     std::stringstream ss(body);
     std::string ipaddr; 
     std::getline(ss, ipaddr, '&'); // IP
     
-    // Realiza atualização ou remoção
-    if(head ==  "TABLE_REMOVE"){
+    if(type == '-'){
         removeLine(ipaddr);
         return;
     }

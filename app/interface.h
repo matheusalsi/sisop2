@@ -10,6 +10,7 @@
 #include <condition_variable>
 #include <regex>
 #include "tables.h"
+#include "globals.h"
 
 // Subsistema de interface
 class InterfaceSS : public WOLSubsystem{

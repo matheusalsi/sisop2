@@ -76,7 +76,7 @@ void InterfaceSS::handleUpdateMessage(std::string msg){
 
 void InterfaceSS::printInterfaceThread(){
 
-    while(isRunning()){
+    while(isRunning()){ /*
         if(!hasTableUpdates){
             continue;
         }
@@ -105,6 +105,7 @@ void InterfaceSS::printInterfaceThread(){
         
         hasTableUpdates = false;
         tableLock.unlock();
+        */
     }
     
 }
@@ -146,7 +147,11 @@ void InterfaceSS::inputThread(){
                 std::clog << "Já fui removido da tabela. Encerrando o programa..." << std::endl;
                 #endif
             }
+            
+            // Força parada do programa
+            g_stop_execution = true;
             setRunning(false);
+
         }
     }
     

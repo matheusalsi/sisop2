@@ -9,10 +9,12 @@
 #include <sys/ioctl.h>
 #include <linux/if.h>
 
-bool stopExecution = false;
+#include "globals.h"
+
+bool g_stop_execution = false;
 
 void handleSigint(int signum){
-    stopExecution = true;
+    g_stop_execution = true;
 }
 
 bool isManager(int argc){
@@ -36,7 +38,7 @@ void initMailboxes(DiscoverySS& discoverySS, ManagementSS& managementSS, Interfa
     connectMailboxes(interfaceSS.getMailbox(), "I_IN <- D_OUT", discoverySS.getMailbox(), "D_OUT -> I_IN");
 
     // Reader: Monitoring - Writer: Discovery 
-    connectMailboxes(monitoringSS.getMailbox(), "MO_IN <- D_OUT", discoverySS.getMailbox(), "D_OUT -> MO_IN");
+    connectMailboxes(monitoringSS.getMailbox(), "MO_IN <- M_OUT", managementSS.getMailbox(), "M_OUT -> MO_IN");
 
     // Reader: Discovery - Writer: Interface 
     connectMailboxes(discoverySS.getMailbox(), "D_IN <- I_OUT", interfaceSS.getMailbox(), "I_OUT -> D_IN");
@@ -92,7 +94,7 @@ int main(int argc, char *argv[])
     interfaceSS.start();
 
     // Somente a interface pode encerrar o programa
-    while(!stopExecution){
+    while(!g_stop_execution){
 
     }
 

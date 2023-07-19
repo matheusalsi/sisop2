@@ -26,11 +26,6 @@ void DiscoverySS::run(){
 
         if(isManager()){ // Server - os pacotes de sleep service discovery e sleep service exit
 
-            #ifdef DEBUG
-            std::clog << "DISCOVERY: ";
-            std::clog << "Estou esperando um packet em " << DISCOVERY_PORT << std::endl;
-            #endif
-
             // Fica esperando por pacotes de algum cliente
             sockaddr_in clientAddrIn;
 
@@ -74,9 +69,6 @@ void DiscoverySS::run(){
                 message.append(macAndHostnameClient);
                 mailBox.writeMessage("M_IN <- D_OUT", message);
 
-                // Envia mensagem para o monitoramento adicionando o ip do cliente a lista
-                mailBox.writeMessage("MO_IN <- D_OUT", ipStr); 
-
             }
 
             else if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT)){ 
@@ -98,8 +90,6 @@ void DiscoverySS::run(){
                 messageExit.append(ipStr);
                 mailBox.writeMessage("M_IN <- D_OUT", messageExit);
 
-                // Envia mensagem para o monitoramento para remover o ip do cliente a lista
-                mailBox.writeMessage("MO_IN <- D_OUT", ipStr); 
             }
     
         }

@@ -5,7 +5,20 @@
 // }
 
 void ManagementSS::run(){
+    // IPs recentemente adicionados e removidos
+    std::vector<std::string> addedIPs;
+    std::vector<std::string> removedIPs;
+
+
     while(isRunning()){
+        addedIPs.clear();
+        removedIPs.clear();
+
+        /*
+        
+            COMUNICAÇÃO COM DISCOVERY: ATUALIZA QUEM ESTÁ NA TABELA
+        
+        */
         if(!mailBox.isEmpty("D_OUT -> M_IN")){
             std::string message;
             mailBox.readMessage("D_OUT -> M_IN", message);
@@ -24,26 +37,33 @@ void ManagementSS::run(){
                 std::string hostname = messageParameters[1];
                 std::string mac = messageParameters[2];
 
-                // Adiciona IP aos modificados
-                recentlyUpdatedIPs.insert(ip);
+                // Ip adicionado
+                addedIPs.push_back(ip);
 
                 if (!table.addLine(hostname, mac, ip, std::string("N/A")))
                     std::cout << "Não foi possível adicionar o: " << ip << " à tabela" << std::endl;
             }
             else if (messageFunction == "REMOVE_CLIENT"){
-                std::string clientIP = messageParameters[0];
+                std::string ip = messageParameters[0];
 
-                // Adiciona IP aos modificados
-                recentlyUpdatedIPs.insert(clientIP);
+                // Ip removido
+                removedIPs.push_back(ip);
 
-                if (!table.removeLine(clientIP))
-                    std::cout << "Não foi possível remover o: " << clientIP << std::endl;
+                if (!table.removeLine(ip))
+                    std::cout << "Não foi possível remover o: " << ip << std::endl;
             }
 
             
         }
+        /*
+        
+            COMUNICAÇÃO COM MONITORAMENTO: DOS RELATOS DE MONITORAMENTO, PEGA
+            OS QUAIS TEM IP NA TABELA ATUALMENTE. APÓS, ENVIA AS MODIFICAÇÕES
+        
+        */
 
-        if(!mailBox.isEmpty("MO_OUT -> M_IN")){
+       // IMPLEMENTAR COMO THREAD?
+        while(!mailBox.isEmpty("MO_OUT -> M_IN")){
             std::string message;
             mailBox.readMessage("MO_OUT -> M_IN", message);
             
@@ -59,14 +79,27 @@ void ManagementSS::run(){
             if (messageFunction == "UPDATE_CLIENT_STATUS"){
                 std::string clientIP = messageParameters[0];
                 std::string clientStatus = messageParameters[1];
-                if(table.checkLineStatusDiff(clientIP, clientStatus)){
+
+                // Apenas atualiza na tabela aqueles que permaneceram após sincronização com discovery
+                if(table.hasIP(clientIP)){
                     table.updateLineStatus(clientIP, clientStatus);
-                    // Atualiza set de ips com atualizações não informadas à interface
-                    recentlyUpdatedIPs.insert(clientIP);
                 }
             }
-
         }
+
+        // Atualiza monitoring sobre adições/remoções da tabela
+        std::string msg;
+        for(auto ip : addedIPs){
+            msg = "+";
+            msg.append(ip);
+            mailBox.writeMessage("MO_IN <- M_OUT", msg);
+        }
+        for(auto ip : removedIPs){
+            msg = "-";
+            msg.append(ip);
+            mailBox.writeMessage("MO_IN <- M_OUT", msg);
+        }
+
 
         if(!mailBox.isEmpty("I_OUT -> M_IN")){
             std::string message;
@@ -79,35 +112,28 @@ void ManagementSS::run(){
             std::string messageFunction;
             getFunctionAndParametersFromMessage(message, messageFunction, messageParameters);
 
-            // Interface requisitando info sobre estado da tabela (houve atualizações?)
-            if(messageFunction == "REQUEST_UPDATE"){
-                if(recentlyUpdatedIPs.size() > 0){
-                    std::string msg;
-                    for(auto ip: recentlyUpdatedIPs){
-                        // Checa se IP foi removido
-                        if(table.hasIP(ip)){
-                            msg = "TABLE_UPDATE&";
-                        }
-                        else{
-                            msg = "TABLE_REMOVE&";
-                        }
-
-
-                        table.appendLineAsMessage(ip, msg);
-                    }
-
-                    // IPs não são mais considerados como "recentemente atualizados"
-                    recentlyUpdatedIPs.clear();
-                    // Envia resposta
-                    mailBox.writeMessage("I_IN <- M_OUT", msg);
-                }
-
-            }
+            // // Interface requisitando a tabela
+            // if(messageFunction == "REQUEST_UPDATE"){
+            //     std::string msg;
+            //     for(auto ip : addedIPs){
+            //         msg = "+";
+            //         table.appendLineAsMessage(ip, msg);
+            //         mailBox.writeMessage("I_IN <- M_OUT", msg);
+            //     }
+            //     for(auto ip : removedIPs){
+            //         msg = "-";
+            //         msg.append(ip);
+            //         mailBox.writeMessage("I_IN <- M_OUT", msg);
+            //     }
+            // }
+            table.printToConsole();
 
         }
-        
+
     }
+        
 }
+
 
 
 void ManagementSS::getFunctionAndParametersFromMessage(std::string message, std::string &function, std::vector<std::string> &parameters){
