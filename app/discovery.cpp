@@ -17,11 +17,6 @@ void DiscoverySS::stop(){
 
     WOLSubsystem::stop();
     discoverySocket.closeSocket();
-
-    #ifdef DEBUG
-    std::clog << "DISCOVERY: ";
-    std::clog << "Destrutor finalizado" << std::endl;
-    #endif
 }
 
 
