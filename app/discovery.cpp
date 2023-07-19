@@ -2,6 +2,7 @@
 
 void DiscoverySS::start(){
     discoverySocket.openSocket();
+    discoverySocket.setSocketTimeoutMS(100);
 
     if(isManager()){ // Server
         discoverySocket.bindSocket();
@@ -13,7 +14,14 @@ void DiscoverySS::start(){
 }
 
 void DiscoverySS::stop(){
+
+    WOLSubsystem::stop();
     discoverySocket.closeSocket();
+
+    #ifdef DEBUG
+    std::clog << "DISCOVERY: ";
+    std::clog << "Destrutor finalizado" << std::endl;
+    #endif
 }
 
 
@@ -30,7 +38,11 @@ void DiscoverySS::run(){
 
             // Fica esperando por pacotes de algum cliente
             sockaddr_in clientAddrIn;
-            clientAddrIn = discoverySocket.receivePacketFromClients(&recvPacket);
+
+            if(!discoverySocket.receivePacketFromClients(&recvPacket, clientAddrIn)){
+                // Timeout
+                continue;
+            }
 
             #ifdef DEBUG
             char buffer[INET_ADDRSTRLEN];
@@ -114,11 +126,13 @@ void DiscoverySS::run(){
                 // O cliente já sabe qual o endereço do servidor
                 discoverySocket.setSocketBroadcastToFalse(); 
 
-                // Envia pacote em outra thread informando que o cliente está saindo
-                std::thread packetSenderThreadExit(&DiscoverySS::sendSleepExitPackets, this, serverAddrIn);
-
+                // Envia pacote
+                sendSleepExitPackets(serverAddrIn);
                 // Espera resposta do servidor
-                discoverySocket.receivePacketFromServer(&recvPacket);
+                if(!discoverySocket.receivePacketFromServer(&recvPacket)){
+                    // Timeout
+                    continue;
+                }
 
                 // Checa se é resposta do manager
                 if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT | ACKNOWLEDGE)){
@@ -128,8 +142,7 @@ void DiscoverySS::run(){
                     #endif
                 }
 
-                hasLeft = true; // Seta como true, acaba encerrando a thread "packet sender"
-                packetSenderThreadExit.join(); // Espera a thread encerrar
+                hasLeft = true; // Seta como true
 
                 // Avisa para a interface que o cliente foi removido
                 #ifdef DEBUG
@@ -142,10 +155,16 @@ void DiscoverySS::run(){
                 // setRunning(false); // Discovery encerra a execução do participante
             }
             else if (!hasLeft){ // Busca o manager
-                std::thread packetSenderThreadDiscover(&DiscoverySS::sendSleepDiscoverPackets, this);
-                
+
+                // Envia pacote
+                sendSleepDiscoverPackets();
                 // Espera resposta do servidor
-                serverAddrIn = discoverySocket.receivePacketFromServer(&recvPacket);
+                if(!discoverySocket.receivePacketFromServer(&recvPacket)){
+                    // Timeout
+                    continue;
+                }
+                
+                serverAddrIn.sin_addr = discoverySocket.getServerBinaryNetworkAddress();
 
                 // Checa se é resposta do manager
                 if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND | ACKNOWLEDGE)){
@@ -169,8 +188,7 @@ void DiscoverySS::run(){
                 message.append(macAndHostnameManager);
                 mailBox.writeMessage("M_IN <- D_OUT", message);
                 
-                foundManager = true; // Seta como true, acaba encerrando a thread "packet sender"
-                packetSenderThreadDiscover.join(); // Espera a thread encerrar
+                foundManager = true;
             }
         }
     }
@@ -178,35 +196,28 @@ void DiscoverySS::run(){
 
 void DiscoverySS::sendSleepDiscoverPackets(){
     packet sendPacket;
+
     sendPacket.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND;
-
     std::string packetPayload = getHostname() + "&" + getMACAddress();
-
     strcpy(sendPacket._payload, packetPayload.c_str());
 
-    // Manda o pacote de discovery enquanto não recebe confirmação
-    while(!foundManager && isRunning()){
-        #ifdef DEBUG
-        std::clog << "DISCOVERY: ";
-        std::clog << "Enviando packet de procura..." << std::endl;
-        #endif
-        discoverySocket.sendPacketToServer(&sendPacket, BROADCAST, NULL);
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    }
+    #ifdef DEBUG
+    std::clog << "DISCOVERY: ";
+    std::clog << "Enviando packet de procura..." << std::endl;
+    #endif
+
+    discoverySocket.sendPacketToServer(&sendPacket, BROADCAST, NULL);
 }
 
 void DiscoverySS::sendSleepExitPackets(struct sockaddr_in serverAddrIn){
     packet sendPacket;
     sendPacket.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT;
-    // Manda o pacote de exit enquanto não recebe confirmação
-    while(!hasLeft && isRunning()){
-        #ifdef DEBUG
-        std::clog << "DISCOVERY: ";
-        std::clog << "Enviando packet de saída..."<< std::endl;
-        #endif
-        discoverySocket.sendPacketToServer(&sendPacket, DIRECT_TO_SERVER, &serverAddrIn);
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    }
+
+    #ifdef DEBUG
+    std::clog << "DISCOVERY: ";
+    std::clog << "Enviando packet de saída..."<< std::endl;
+    #endif
+    discoverySocket.sendPacketToServer(&sendPacket, DIRECT_TO_SERVER, &serverAddrIn);
 
 }
 
