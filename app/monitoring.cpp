@@ -98,10 +98,19 @@ void MonitoringSS::run(){
 
             // Fica esperando por pacotes do manager
             sockaddr_in managerAddrIn;
-            if(!monitoringSocket.receivePacketFromClients(&recvPacket, managerAddrIn)){
+
+            try{
+                if(!monitoringSocket.receivePacketFromClients(&recvPacket, managerAddrIn)){
                 // Timeout
                 continue;
+                }
+            } catch(const std::runtime_error& e) {
+                #ifdef DEBUG
+                std::clog << "MONITORING: ";
+                std::clog << "Exceção capturada na thread de sleep status packets: " << e.what() << std::endl;
+                #endif
             }
+            
 
             #ifdef DEBUG
             char ipStr[INET_ADDRSTRLEN];
