@@ -2,10 +2,12 @@
 
 void MonitoringSS::start(){
     monitoringSocket.openSocket();
-    monitoringSocket.setSocketTimeoutMS(100); 
-
-    if(!isManager()){ // Cliente
+     
+    if(!isManager()){ // Participante (Servidor)
         monitoringSocket.bindSocket();
+    }
+    else{ // Manager (Cliente)
+        monitoringSocket.setSocketTimeoutMS(100);
     }
     WOLSubsystem::start();
 };
@@ -16,8 +18,6 @@ void MonitoringSS::stop(){
 };
 
 void MonitoringSS::run(){
-    packet recvPacket, sendPacket;
-
     while (isRunning()) {
         if(isManager()){ // Cliente - envia os pacotes de sleep status requests
             
@@ -98,20 +98,10 @@ void MonitoringSS::run(){
 
             // Fica esperando por pacotes do manager
             sockaddr_in managerAddrIn;
+            packet sendPacketStatusRequest, recvPacketStatusRequest;
 
-            try{
-                if(!monitoringSocket.receivePacketFromClients(&recvPacket, managerAddrIn)){
-                // Timeout
-                continue;
-                }
-            } catch(const std::runtime_error& e) {
-                #ifdef DEBUG
-                std::clog << "MONITORING: ";
-                std::clog << "Exceção capturada na thread de sleep status packets: " << e.what() << std::endl;
-                #endif
-            }
+            monitoringSocket.receivePacketFromClients(&recvPacketStatusRequest, managerAddrIn);
             
-
             #ifdef DEBUG
             char ipStr[INET_ADDRSTRLEN];
             inet_ntop( AF_INET, &managerAddrIn.sin_addr, ipStr, sizeof( ipStr ));
@@ -120,15 +110,15 @@ void MonitoringSS::run(){
             #endif
 
             // Checa se o tipo do pacote está correto e responde
-            if(recvPacket.type == SLEEP_STATUS_REQUEST) {
+            if(recvPacketStatusRequest.type == SLEEP_STATUS_REQUEST) {
                 #ifdef DEBUG
                 std::clog << "MONITORING: ";
                 std::clog << "Estou respondendo o manager " << ipStr << " sobre meu status" << std::endl;
                 #endif
 
                 // Retorna para o servidor pacote confirmando que ele recebeu o pacote de status
-                sendPacket.type = SLEEP_STATUS_REQUEST | ACKNOWLEDGE;
-                monitoringSocket.sendPacketToClient(&sendPacket, managerAddrIn);
+                sendPacketStatusRequest.type = SLEEP_STATUS_REQUEST | ACKNOWLEDGE;
+                monitoringSocket.sendPacketToClient(&sendPacketStatusRequest, managerAddrIn);
             }
         }
     }
@@ -139,50 +129,34 @@ void MonitoringSS::run(){
 };
 
 void MonitoringSS::sendSleepStatusPackets(struct sockaddr_in managerAddrIn){
-    packet sendPacket, recvPacket;
+    packet sendPacketSleepStatus, recvPacketSleepStatus;
     sockaddr_in clientAddrin;
-    bool replied = false;
-    bool timerExpired = false;
-    sendPacket.type = SLEEP_STATUS_REQUEST;
-
-    std::chrono::seconds timeout(1);
-    auto startTime = std::chrono::steady_clock::now();
+    bool asleep = true;
+    sendPacketSleepStatus.type = SLEEP_STATUS_REQUEST;
 
     // Manda o pacote de sleepStatus enquanto não recebe confirmação e não há timeOut
-    while(!timerExpired && !replied && isRunning()){
-        recvPacket.type = SLEEP_STATUS_REQUEST;
-        try {
-            monitoringSocket.sendPacketToServer(&sendPacket, DIRECT_TO_SERVER, &managerAddrIn);
-        } catch(const std::runtime_error& e) {
-            #ifdef DEBUG
-            std::clog << "MONITORING: ";
-            std::clog << "Exceção capturada na thread enviar de sleep status packets: " << e.what() << std::endl;
-            #endif
-        }
-    
-        try {
-            monitoringSocket.receivePacketFromClients(&recvPacket, clientAddrin);
-        } catch(const std::runtime_error& e) {
-            #ifdef DEBUG
-            std::clog << "MONITORING: ";
-            std::clog << "Exceção capturada na thread de sleep status packets: " << e.what() << std::endl;
-            #endif
-        }
+    monitoringSocket.sendPacketToServer(&sendPacketSleepStatus, DIRECT_TO_SERVER, &managerAddrIn);
 
-        if(recvPacket.type == (SLEEP_STATUS_REQUEST | ACKNOWLEDGE)) {
+    try {
+    if (monitoringSocket.receivePacketFromClients(&recvPacketSleepStatus, clientAddrin)){
+
+        if(recvPacketSleepStatus.type == (SLEEP_STATUS_REQUEST | ACKNOWLEDGE)) {
             #ifdef DEBUG
             std::clog << "MONITORING: ";
             std::clog << "Recebi um pacote do cliente com o status awake" << std::endl;
             #endif
-            replied = true;
-        }
-        auto currentTime = std::chrono::steady_clock::now();
-        auto elapsedTime = std::chrono::duration_cast<std::chrono::seconds>(currentTime - startTime);
-
-        if(elapsedTime >= timeout) {
-            timerExpired = true;
-        }
+            asleep = false;
+        } 
     }
+    } 
+    catch(const std::runtime_error& e) {
+        #ifdef DEBUG
+        std::clog << "MONITORING: ";
+        std::clog << "Exceção capturada na thread de sleep status packets: " << e.what() << std::endl;
+        #endif
+    }
+
+
     // Caso tenha timeOut atualiza o status para sleep do contrário atualiza para awake
     std::string message;
     char ipStr[INET_ADDRSTRLEN];
@@ -192,10 +166,9 @@ void MonitoringSS::sendSleepStatusPackets(struct sockaddr_in managerAddrIn){
     message.append(ipStr);
     message.append("&");
     
-    if (timerExpired && !replied)
+    if (asleep)
         message.append("asleep");
-    
-    else if (replied)
+    else
         message.append("awake");
     
     mailBox.writeMessage("M_IN <- MO_OUT", message);
