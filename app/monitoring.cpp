@@ -22,7 +22,7 @@ void MonitoringSS::run(){
         if(isManager()){ // Cliente - envia os pacotes de sleep status requests
             
             // Sincronização com gerenciamento
-            while (isRunning() && !mailBox.isEmpty("M_OUT -> MO_IN")){
+            while (!mailBox.isEmpty("M_OUT -> MO_IN")){
                 std::string messageIpUpdates;
                 mailBox.readMessage("M_OUT -> MO_IN", messageIpUpdates);
                 #ifdef DEBUG
@@ -41,7 +41,6 @@ void MonitoringSS::run(){
                 else{
                     ipList.erase(ip);
                 }
-
             }
             
             if (ipList.size() == 0) {
@@ -64,15 +63,15 @@ void MonitoringSS::run(){
             
             for(auto ip: ipList) {
                 char ipStr[INET_ADDRSTRLEN];
+                
                 strcpy(ipStr, ip.c_str());
                 #ifdef DEBUG
                 std::clog << "MONITORING: ";
                 std::clog << "Estou enviando status request para o client de ip: " << ipStr << std::endl;
                 #endif
 
-                sockaddr_in clientAddrIn;
-                inet_pton(AF_INET, ipStr, &(clientAddrIn.sin_addr));
-                packetSenderThreadStatus.emplace_back(&MonitoringSS::sendSleepStatusPackets, this, clientAddrIn);
+                
+                packetSenderThreadStatus.emplace_back(&MonitoringSS::sendSleepStatusPackets, this, ipStr);
             }
             
             for (auto& packetSenderThreadStatus : packetSenderThreadStatus) {
@@ -128,11 +127,14 @@ void MonitoringSS::run(){
 
 };
 
-void MonitoringSS::sendSleepStatusPackets(struct sockaddr_in clientAddrIn){
+void MonitoringSS::sendSleepStatusPackets(char ipStr[INET_ADDRSTRLEN]){
     packet sendPacketSleepStatus, recvPacketSleepStatus;
     sockaddr_in managerAddrin;
     bool asleep = true;
     sendPacketSleepStatus.type = SLEEP_STATUS_REQUEST;
+
+    sockaddr_in clientAddrIn;
+    inet_pton(AF_INET, ipStr, &(clientAddrIn.sin_addr));
 
     // Manda o pacote de sleepStatus enquanto não recebe confirmação e não há timeOut
     monitoringSocket.sendPacketToServer(&sendPacketSleepStatus, DIRECT_TO_SERVER, &clientAddrIn);
@@ -158,7 +160,7 @@ void MonitoringSS::sendSleepStatusPackets(struct sockaddr_in clientAddrIn){
 
     // Caso tenha timeOut atualiza o status para sleep do contrário atualiza para awake
     std::string message;
-    char ipStr[INET_ADDRSTRLEN];
+
     inet_ntop(AF_INET, &clientAddrIn.sin_addr, ipStr, INET_ADDRSTRLEN);
     message.append("UPDATE_CLIENT_STATUS");
     message.append("&");
