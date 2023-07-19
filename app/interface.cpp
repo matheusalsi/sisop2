@@ -30,6 +30,11 @@
     
 // }
 
+void InterfaceSS::stop(){
+    handleExit();
+    WOLSubsystem::stop();
+}
+
 void InterfaceSS::run(){
     hasTableUpdates = true;
     exiting = false;
@@ -52,6 +57,12 @@ void InterfaceSS::run(){
         else{
             std::string msg;
             mailBox.readMessage("M_OUT -> I_IN", msg);
+            #ifdef DEBUG
+            std::clog << "INTERFACE: ";
+            std::clog << "Recebi mensagem de GERENCIAMENTO: " << msg << std::endl;
+            #endif
+            
+            
             handleUpdateMessage(msg);
         }
 
@@ -76,7 +87,7 @@ void InterfaceSS::handleUpdateMessage(std::string msg){
 
 void InterfaceSS::printInterfaceThread(){
 
-    while(isRunning()){ /*
+    while(isRunning()){
         if(!hasTableUpdates){
             continue;
         }
@@ -105,7 +116,7 @@ void InterfaceSS::printInterfaceThread(){
         
         hasTableUpdates = false;
         tableLock.unlock();
-        */
+        
     }
     
 }
@@ -116,7 +127,6 @@ void InterfaceSS::inputThread(){
     std::smatch match;
     while(isRunning()){
         std::getline(std::cin, input); // Pega espaços
-        hasTableUpdates = true;
         if (isManager()){ // Fazer aqui o WAKEUP hostname
             if(std::regex_search(input, match, regex)){
                 /* wakeonlan é chamado com: 
@@ -136,23 +146,37 @@ void InterfaceSS::inputThread(){
             }
         }
         else if (input == "EXIT"){
-            hasTableUpdates = true;
-            if (!isManager()){
-                mailBox.writeMessage("D_IN <- I_OUT", input); // Participante avisa para o seu discovery que vai sair
-                while(mailBox.isEmpty("D_OUT -> I_IN")){ // Manager espera o seu discovery avisar que o participante foi removido da tabela
-                    exiting = true; 
-                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-                }
-                #ifdef DEBUG
-                std::clog << "Já fui removido da tabela. Encerrando o programa..." << std::endl;
-                #endif
-            }
-            
-            // Força parada do programa
-            g_stop_execution = true;
-            setRunning(false);
-
+            handleExit();
         }
     }
     
+}
+
+void InterfaceSS::handleExit(){
+    if(exiting){
+        return;
+    }
+    
+    std::cout << "ABLUBLUEEEE\n";
+
+    std::string input;
+    
+    exiting = true;
+    
+    if (!isManager()){
+        hasTableUpdates = true; // Notifica thread the print para exibir mensagem
+        mailBox.writeMessage("D_IN <- I_OUT", input); // Participante avisa para o seu discovery que vai sair
+        while(mailBox.isEmpty("D_OUT -> I_IN")){ // Manager espera o seu discovery avisar que o participante foi removido da tabela
+            exiting = true; 
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        }
+        #ifdef DEBUG
+        std::clog << "Já fui removido da tabela. Encerrando o programa..." << std::endl;
+        #endif
+    }
+    
+    // Força parada do programa
+    g_stop_execution = true;
+    setRunning(false);
+
 }

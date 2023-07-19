@@ -57,6 +57,7 @@ class WOLTable{
     void appendLineAsMessage(std::string ipaddr, std::string& msg); // Obtém uma linha em formato de mensagem;
     void updateLineFromMessage(std::string& msg); // Adiciona informações a uma linha através de mensagem
     bool hasIP(std::string &ipaddr); // Indica se o IP está na tabela
+    const std::map<std::string, WOLTableLine>& getLines(); // Retorna as linhas da tabela como "read only"
 };
 
 #endif // __TABLES_H__

@@ -63,7 +63,7 @@ void ManagementSS::run(){
         */
 
        // IMPLEMENTAR COMO THREAD?
-        while(!mailBox.isEmpty("MO_OUT -> M_IN")){
+        while(isRunning() && !mailBox.isEmpty("MO_OUT -> M_IN")){
             std::string message;
             mailBox.readMessage("MO_OUT -> M_IN", message);
             
@@ -112,21 +112,16 @@ void ManagementSS::run(){
             std::string messageFunction;
             getFunctionAndParametersFromMessage(message, messageFunction, messageParameters);
 
-            // // Interface requisitando a tabela
-            // if(messageFunction == "REQUEST_UPDATE"){
-            //     std::string msg;
-            //     for(auto ip : addedIPs){
-            //         msg = "+";
-            //         table.appendLineAsMessage(ip, msg);
-            //         mailBox.writeMessage("I_IN <- M_OUT", msg);
-            //     }
-            //     for(auto ip : removedIPs){
-            //         msg = "-";
-            //         msg.append(ip);
-            //         mailBox.writeMessage("I_IN <- M_OUT", msg);
-            //     }
-            // }
-            table.printToConsole();
+            // Interface requisitando a tabela
+            if(messageFunction == "REQUEST_UPDATE"){
+                std::string msg;
+                for(const auto& pair : table.getLines()){
+                    msg = "+";
+                    table.appendLineAsMessage(pair.first, msg);
+                    mailBox.writeMessage("I_IN <- M_OUT", msg);
+                }
+            }
+            // table.printToConsole();
 
         }
 

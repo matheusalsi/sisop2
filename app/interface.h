@@ -28,6 +28,9 @@ class InterfaceSS : public WOLSubsystem{
     // Thread de input
     void inputThread();
 
+    // Faz o exit
+    void handleExit();
+
     // Lida com mensagens de atualização da tabela (inserção, remoção, mudança de status)
     void handleUpdateMessage(std::string msg);
 
@@ -36,6 +39,7 @@ class InterfaceSS : public WOLSubsystem{
     public:
     InterfaceSS(bool isManager) : WOLSubsystem(isManager) {};
 
+    void stop();
     void run();
 
 

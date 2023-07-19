@@ -66,6 +66,7 @@ bool WOLTable::removeLine(std::string ipaddr){
         return false;
     }
 
+    hostnameMACMap.erase(lines[ipaddr].hostname);
     lines.erase(ipaddr);
 
     // Atualiza tamanho do hostname. Por default, a chave maior está no fim.
@@ -120,4 +121,8 @@ bool WOLTable::hasIP(std::string& ipaddr){
 std::string WOLTable::getMacFromHostname(std::string hostname)
 {
     return hostnameMACMap[hostname];
+}
+
+const std::map<std::string, WOLTableLine>& WOLTable::getLines(){
+    return lines;
 }
