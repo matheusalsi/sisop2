@@ -62,6 +62,7 @@ int main(int argc, char *argv[])
     }
 
     std::clog.rdbuf(log.rdbuf());
+    log.close();
 
     // Timestamp
     auto end = std::chrono::system_clock::now();
@@ -96,10 +97,16 @@ int main(int argc, char *argv[])
 
     }
 
+    #ifdef DEBUG
+    std::clog << "Encerrando a execução" << std:: endl;
+    #endif
+
+
     discoverySS.stop();
-    managementSS.stop();
     monitoringSS.stop();
+    managementSS.stop();
     interfaceSS.stop();
+    
     std::clog << "FINALIZADO!" << std::endl;
 
     return 0;
