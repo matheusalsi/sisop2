@@ -35,15 +35,16 @@ void DiscoverySS::run(){
                 continue;
             }
             */
-           
+
             try{
-                discoverySocket.receivePacketFromClients(&recvPacket, clientAddrIn);
+                if(!discoverySocket.receivePacketFromClients(&recvPacket, clientAddrIn)){
+                    continue;
+                }
             } catch(const std::runtime_error& e) {
                 #ifdef DEBUG
                 std::clog << "DISCOVERY: ";
                 std::clog << "Exceção capturada na thread de receber pacote " << e.what() << std::endl;
                 #endif
-                continue;
             }
 
             #ifdef DEBUG
@@ -137,13 +138,15 @@ void DiscoverySS::run(){
                 }
                 */
                 try{
-                    discoverySocket.receivePacketFromServer(&recvPacket);
+                    if(!discoverySocket.receivePacketFromServer(&recvPacket)){
+                    // Timeout
+                    continue;
+                    }
                 } catch(const std::runtime_error& e) {
                     #ifdef DEBUG
                     std::clog << "DISCOVERY: ";
                     std::clog << "Exceção capturada na thread de confirmação da saída! " << e.what() << std::endl;
                     #endif
-                    continue;
                 }
 
                 // Checa se é resposta do manager
@@ -180,13 +183,15 @@ void DiscoverySS::run(){
                 */
 
                 try{
-                    discoverySocket.receivePacketFromServer(&recvPacket);
+                    if(!discoverySocket.receivePacketFromServer(&recvPacket)){
+                    // Timeout
+                    continue;
+                    }
                 } catch(const std::runtime_error& e) {
                     #ifdef DEBUG
                     std::clog << "DISCOVERY: ";
                     std::clog << "Exceção capturada na thread de confirmação que eu entrei! " << e.what() << std::endl;
                     #endif
-                    continue;
                 }
                 
                 serverAddrIn.sin_addr = discoverySocket.getServerBinaryNetworkAddress();
