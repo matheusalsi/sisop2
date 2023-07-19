@@ -23,7 +23,8 @@ void MonitoringSS::run(){
         if(isManager()){ // Cliente - envia os pacotes de sleep status requests
             
             #ifdef DEBUG
-            std::cout << "Estou enviando um packet em " << MONITORING_PORT << std::endl;
+            std::clog << "MONITORING: ";
+            std::clog << "Estou enviando um packet em " << MONITORING_PORT << std::endl;
             #endif
             std::this_thread::sleep_for(std::chrono::seconds(5));
             
@@ -39,13 +40,15 @@ void MonitoringSS::run(){
             }
             
             if (ipList.size() == 0) {
-                std::cout << "Não há clientes para monitorar" << std::endl;
+                std::clog << "MONITORING: ";
+                std::clog << "Não há clientes para monitorar" << std::endl;
                 std::this_thread::sleep_for(std::chrono::seconds(1));
                 continue;
             }
 
             #ifdef DEBUG
-            std::cout << "Estou iniciando threads em " << MONITORING_PORT << std::endl;
+            std::clog << "MONITORING: ";
+            std::clog << "Estou iniciando threads em " << MONITORING_PORT << std::endl;
             #endif  
             
 
@@ -56,7 +59,8 @@ void MonitoringSS::run(){
                 char ipStr[INET_ADDRSTRLEN];
                 strcpy(ipStr, ip.c_str());
                 #ifdef DEBUG
-                std::cout << "Estou enviando status request para o client de ip: " << ipStr << std::endl;
+                std::clog << "MONITORING: ";
+                std::clog << "Estou enviando status request para o client de ip: " << ipStr << std::endl;
                 #endif
 
                 sockaddr_in clientAddrIn;
@@ -73,7 +77,8 @@ void MonitoringSS::run(){
         else { // Server - responde os pacotes de sleep status requests
 
             #ifdef DEBUG
-            std::cout << "Estou esperando um packet em " << MONITORING_PORT << std::endl;
+            std::clog << "MONITORING: ";
+            std::clog << "Estou esperando um packet em " << MONITORING_PORT << std::endl;
             #endif
 
             // Fica esperando por pacotes do manager
@@ -83,13 +88,15 @@ void MonitoringSS::run(){
             #ifdef DEBUG
             char ipStr[INET_ADDRSTRLEN];
             inet_ntop( AF_INET, &managerAddrIn.sin_addr, ipStr, sizeof( ipStr ));
-            std::cout << "Recebi um pacote de " << ipStr << "!" << std::endl;
+            std::clog << "MONITORING: ";
+            std::clog << "Recebi um pacote de " << ipStr << "!" << std::endl;
             #endif
 
             // Checa se o tipo do pacote está correto e responde
             if(recvPacket.type == SLEEP_STATUS_REQUEST) {
                 #ifdef DEBUG
-                std::cout << "Estou respondendo o manager " << ipStr << " sobre meu status" << std::endl;
+                std::clog << "MONITORING: ";
+                std::clog << "Estou respondendo o manager " << ipStr << " sobre meu status" << std::endl;
                 #endif
 
                 // Retorna para o servidor pacote confirmando que ele recebeu o pacote de status
@@ -122,12 +129,14 @@ void MonitoringSS::sendSleepStatusPackets(struct sockaddr_in managerAddrIn){
             monitoringSocket.receivePacketFromClients(&recvPacket);
         } catch(const std::runtime_error& e) {
             #ifdef DEBUG
-            std::cout << "Exceção capturada na thread de sleep status packets: " << e.what() << std::endl;
+            std::clog << "MONITORING: ";
+            std::clog << "Exceção capturada na thread de sleep status packets: " << e.what() << std::endl;
             #endif
         }
 
         if(recvPacket.type == (SLEEP_STATUS_REQUEST | ACKNOWLEDGE)) {
-            std::cout << "Recebi um pacote do cliente com o status awake" << std::endl;
+            std::clog << "MONITORING: ";
+            std::clog << "Recebi um pacote do cliente com o status awake" << std::endl;
             replied = true;
         }
         auto currentTime = std::chrono::steady_clock::now();

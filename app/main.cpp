@@ -51,11 +51,32 @@ int main(int argc, char *argv[])
     // Handling de Ctrl+c
     signal(SIGINT, handleSigint);
 
+    // Logging para arquivo
+    #ifdef DEBUG
+    std::ofstream log;
+    if(manager){
+        log.open("log_manager.txt");
+    }
+    else{
+        log.open("log_participant.txt");
+    }
+
+    std::clog.rdbuf(log.rdbuf());
+
+    // Timestamp
+    auto end = std::chrono::system_clock::now();
+    std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+    
+    std::clog << std::ctime(&end_time) << std::endl;
+    #endif
+
+
+
     #ifdef DEBUG
     if(manager)
-        std::cout << "Eu sou o gerente!" << std::endl;
+        std::clog << "Eu sou o gerente!" << std::endl;
     else
-        std::cout << "Eu sou um participante" << std::endl;
+        std::clog << "Eu sou um participante" << std::endl;
     #endif
 
     DiscoverySS discoverySS(manager);
@@ -79,7 +100,7 @@ int main(int argc, char *argv[])
     managementSS.stop();
     monitoringSS.stop();
     interfaceSS.stop();
-    std::cout << "FINALIZADO!" << std::endl;
+    std::clog << "FINALIZADO!" << std::endl;
 
     return 0;
 }

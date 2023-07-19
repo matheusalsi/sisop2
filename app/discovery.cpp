@@ -24,7 +24,8 @@ void DiscoverySS::run(){
         if(isManager()){ // Server - os pacotes de sleep service discovery e sleep service exit
 
             #ifdef DEBUG
-            std::cout << "Estou esperando um packet em " << DISCOVERY_PORT << std::endl;
+            std::clog << "DISCOVERY: ";
+            std::clog << "Estou esperando um packet em " << DISCOVERY_PORT << std::endl;
             #endif
 
             // Fica esperando por pacotes de algum cliente
@@ -34,7 +35,8 @@ void DiscoverySS::run(){
             #ifdef DEBUG
             char buffer[INET_ADDRSTRLEN];
             inet_ntop( AF_INET, &clientAddrIn.sin_addr, buffer, sizeof( buffer ));
-            std::cout << "Recebi um pacote de " << buffer << "!" << std::endl;
+            std::clog << "DISCOVERY: ";
+            std::clog << "Recebi um pacote de " << buffer << "!" << std::endl;
             #endif
 
             // Checa o tipo de pacote: Adicionar ao sistema ou retirar do sistema
@@ -43,7 +45,8 @@ void DiscoverySS::run(){
                 macAndHostnameClient = recvPacket._payload;
 
                 #ifdef DEBUG
-                std::cout << "Estou respondendo o cliente " << buffer << " que quer entrar" << std::endl;
+                std::clog << "DISCOVERY: ";
+                std::clog << "Estou respondendo o cliente " << buffer << " que quer entrar" << std::endl;
                 #endif
                 
                 // Retorna para o cliente pacote informando que este é o manager, com suas informações de hostname e MAC
@@ -71,7 +74,8 @@ void DiscoverySS::run(){
 
             else if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT)){ 
                 #ifdef DEBUG
-                std::cout << "Estou respondendo o cliente " << buffer << " que quer sair" << std::endl;
+                std::clog << "DISCOVERY: ";
+                std::clog << "Estou respondendo o cliente " << buffer << " que quer sair" << std::endl;
                 #endif
                 
                 // Retorna para o cliente pacote confirmando que ele recebeu o pacote de descoberta
@@ -102,7 +106,10 @@ void DiscoverySS::run(){
                 std::string messageInterfaceLeave;
                 mailBox.readMessage("I_OUT -> D_IN", messageInterfaceLeave);
 
-                std::cout << "Mensagem de INTERFACE: " << messageInterfaceLeave << std::endl; 
+                #ifdef DEBUG
+                std::clog << "DISCOVERY: ";
+                std::clog << "Mensagem de INTERFACE: " << messageInterfaceLeave << std::endl; 
+                #endif
 
                 // O cliente já sabe qual o endereço do servidor
                 discoverySocket.setSocketBroadcastToFalse(); 
@@ -115,7 +122,10 @@ void DiscoverySS::run(){
 
                 // Checa se é resposta do manager
                 if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT | ACKNOWLEDGE)){
-                    std::cout << "Recebi um pacote do manager de confirmação da saída!" << std::endl;
+                    #ifdef DEBUG
+                    std::clog << "DISCOVERY: ";
+                    std::clog << "Recebi um pacote do manager de confirmação da saída!" << std::endl;
+                    #endif
                 }
 
                 hasLeft = true; // Seta como true, acaba encerrando a thread "packet sender"
@@ -123,7 +133,8 @@ void DiscoverySS::run(){
 
                 // Avisa para a interface que o cliente foi removido
                 #ifdef DEBUG
-                std::cout << "Estou avisando a minha interface que eu fui removido" << std::endl;
+                std::clog << "DISCOVERY: ";
+                std::clog << "Estou avisando a minha interface que eu fui removido" << std::endl;
                 #endif
                 std::string messageTableRemoved;
                 messageTableRemoved.append("I_WAS_REMOVED");
@@ -138,7 +149,10 @@ void DiscoverySS::run(){
 
                 // Checa se é resposta do manager
                 if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND | ACKNOWLEDGE)){
-                    std::cout << "Recebi um pacote do manager de confirmação que eu entrei!" << std::endl;
+                    #ifdef DEBUG
+                    std::clog << "DISCOVERY: ";
+                    std::clog << "Recebi um pacote do manager de confirmação que eu entrei!" << std::endl;
+                    #endif
                 }
 
                 // Adiciona o manager ao seu gerenciamento
@@ -173,7 +187,8 @@ void DiscoverySS::sendSleepDiscoverPackets(){
     // Manda o pacote de discovery enquanto não recebe confirmação
     while(!foundManager && isRunning()){
         #ifdef DEBUG
-        std::cout << "Enviando packet de procura..."<< std::endl;
+        std::clog << "DISCOVERY: ";
+        std::clog << "Enviando packet de procura..." << std::endl;
         #endif
         discoverySocket.sendPacketToServer(&sendPacket, BROADCAST, NULL);
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -186,7 +201,8 @@ void DiscoverySS::sendSleepExitPackets(struct sockaddr_in serverAddrIn){
     // Manda o pacote de exit enquanto não recebe confirmação
     while(!hasLeft && isRunning()){
         #ifdef DEBUG
-        std::cout << "Enviando packet de saída..."<< std::endl;
+        std::clog << "DISCOVERY: ";
+        std::clog << "Enviando packet de saída..."<< std::endl;
         #endif
         discoverySocket.sendPacketToServer(&sendPacket, DIRECT_TO_SERVER, &serverAddrIn);
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));

@@ -33,7 +33,7 @@ void InterfaceSS::userInputInterface(){
 void InterfaceSS::run(){
     while(isRunning()){
         
-        userInputInterface();
+        //userInputInterface();
         // printInterface();
 
     }
