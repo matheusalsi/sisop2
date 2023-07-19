@@ -151,8 +151,15 @@ void MonitoringSS::sendSleepStatusPackets(struct sockaddr_in managerAddrIn){
     // Manda o pacote de sleepStatus enquanto não recebe confirmação e não há timeOut
     while(!timerExpired && !replied && isRunning()){
         recvPacket.type = SLEEP_STATUS_REQUEST;
-        monitoringSocket.sendPacketToServer(&sendPacket, DIRECT_TO_SERVER, &managerAddrIn);
-
+        try {
+            monitoringSocket.sendPacketToServer(&sendPacket, DIRECT_TO_SERVER, &managerAddrIn);
+        } catch(const std::runtime_error& e) {
+            #ifdef DEBUG
+            std::clog << "MONITORING: ";
+            std::clog << "Exceção capturada na thread enviar de sleep status packets: " << e.what() << std::endl;
+            #endif
+        }
+    
         try {
             monitoringSocket.receivePacketFromClients(&recvPacket, clientAddrin);
         } catch(const std::runtime_error& e) {
