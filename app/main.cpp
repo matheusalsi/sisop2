@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
     log.close();
     #endif
 
-    std::clog << "FINALIZADO!" << std::endl;
+    std::cout << "FINALIZADO!" << std::endl;
 
     return 0;
 }

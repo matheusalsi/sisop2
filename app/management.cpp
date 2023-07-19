@@ -27,7 +27,7 @@ void ManagementSS::run(){
                 // Adiciona IP aos modificados
                 recentlyUpdatedIPs.insert(ip);
 
-                if (!table.addLine(hostname, mac, ip))
+                if (!table.addLine(hostname, mac, ip, std::string("N/A")))
                     std::cout << "Não foi possível adicionar o: " << ip << " à tabela" << std::endl;
             }
             else if (messageFunction == "REMOVE_CLIENT"){

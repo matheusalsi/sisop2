@@ -111,17 +111,31 @@ void InterfaceSS::printInterfaceThread(){
 
 void InterfaceSS::inputThread(){
     std::string input;
+    std::regex regex("wakeup (.*)");
+    std::smatch match;
     while(isRunning()){
-        std::cin >> input;
+        std::getline(std::cin, input); // Pega espaços
         hasTableUpdates = true;
-        
-        if (input == "" && isManager()){ // Fazer aqui o WAKEUP hostname
+        if (isManager()){ // Fazer aqui o WAKEUP hostname
+            if(std::regex_search(input, match, regex)){
                 /* wakeonlan é chamado com: 
                 std::string wakeonlan = "WAKEONLAN" + mac
                 system(wakeonlan.c_str())
                 */
+                
+                auto hostname = match[0].str();
+                auto mac = localTable.getMacFromHostname(hostname);
+                std::string wakeonlan = "wakeonlan ";
+                wakeonlan.append(mac);
+                
+                std::cout << "Enviando comando \"" << wakeonlan << "\"" << std::endl;
+
+                system(wakeonlan.c_str());
+
+            }
         }
         else if (input == "EXIT"){
+            hasTableUpdates = true;
             if (!isManager()){
                 mailBox.writeMessage("D_IN <- I_OUT", input); // Participante avisa para o seu discovery que vai sair
                 while(mailBox.isEmpty("D_OUT -> I_IN")){ // Manager espera o seu discovery avisar que o participante foi removido da tabela

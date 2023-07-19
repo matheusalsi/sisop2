@@ -45,7 +45,7 @@ void WOLTable::printToConsole(){
 
 }
 
-bool WOLTable::addLine(std::string hostname, std::string macaddr, std::string ipaddr){
+bool WOLTable::addLine(std::string hostname, std::string macaddr, std::string ipaddr, std::string status){
     if(lines.find(ipaddr) != lines.end()){
         return false;
     }
@@ -56,7 +56,8 @@ bool WOLTable::addLine(std::string hostname, std::string macaddr, std::string ip
         hostname_max_len = hostname_len;
     }
 
-    lines[ipaddr] = WOLTableLine(hostname, macaddr, ipaddr, "N/A");
+    lines[ipaddr] = WOLTableLine(hostname, macaddr, ipaddr, status);
+    hostnameMACMap[hostname] = macaddr;
     return true;
 }
 
@@ -105,13 +106,20 @@ void WOLTable::updateLineFromMessage(std::string& msg){
         return;
     }
     else{
-        lines[ipaddr].ip = ipaddr;
-        std::getline(ss, lines[ipaddr].hostname, '&'); // HOSTNAME
-        std::getline(ss, lines[ipaddr].mac, '&'); // MAC
-        std::getline(ss, lines[ipaddr].status, '&'); // STATUS
+        std::string hostname, mac, status;
+        std::getline(ss, hostname, '&'); // HOSTNAME
+        std::getline(ss, mac, '&'); // MAC
+        std::getline(ss, status, '&'); // STATUS
+        
+        addLine(hostname, mac, ipaddr, status);
     }
 }
 
 bool WOLTable::hasIP(std::string& ipaddr){
     return (lines.find(ipaddr) != lines.end());
+}
+
+std::string WOLTable::getMacFromHostname(std::string hostname)
+{
+    return hostnameMACMap[hostname];
 }

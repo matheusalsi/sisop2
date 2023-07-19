@@ -44,9 +44,12 @@ class WOLTable{
     std::map<std::string, WOLTableLine> lines; // Mapa de endereço IP para linha da tabela contendo infos
     int hostname_max_len = HOSTNAME_ROW_WIDTH;
     
+    // Hostnames para IPs
+    std::map<std::string, std::string> hostnameMACMap;
+
     public:
     void printToConsole(); // Imprime a tabela na tela
-    bool addLine(std::string ipaddr, std::string hostname, std::string macaddr); //Adiciona linha contendo info desse ip
+    bool addLine(std::string ipaddr, std::string hostname, std::string macaddr, std::string status); //Adiciona linha contendo info desse ip
     bool removeLine(std::string ipaddr); // Remove linha contendo info desse ip
     bool checkLineStatusDiff(std::string ipaddr, std::string status); // Checa se novo status é diferente
     void updateLineStatus(std::string ipaddr, std::string status); // Atualiza status desse ip

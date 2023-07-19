@@ -32,8 +32,10 @@ void MonitoringSS::run(){
             }
             
             if (ipList.size() == 0) {
+                #ifdef DEBUG
                 std::clog << "MONITORING: ";
                 std::clog << "Não há clientes para monitorar" << std::endl;
+                #endif
                 std::this_thread::sleep_for(std::chrono::seconds(1));
                 continue;
             }
