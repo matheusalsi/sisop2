@@ -38,6 +38,7 @@ class InterfaceSS : public WOLSubsystem{
 
     public:
     InterfaceSS(bool isManager) : WOLSubsystem(isManager) {};
+    void getFunctionAndParametersFromMessage(std::string message, std::string &function, std::vector<std::string> &parameters);
 
     void stop();
     void run();

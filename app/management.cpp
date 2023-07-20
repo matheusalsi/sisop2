@@ -114,12 +114,10 @@ void ManagementSS::run(){
 
             // Interface requisitando a tabela
             if(messageFunction == "REQUEST_UPDATE"){
-                std::string msg;
-                for(const auto& pair : table.getLines()){
-                    msg = "+";
-                    table.appendLineAsMessage(pair.first, msg);
-                    mailBox.writeMessage("I_IN <- M_OUT", msg);
-                }
+                std::string msg = "SEND_UPDATE";
+                msg.append("&");
+                msg.append(table.tableToString());
+                mailBox.writeMessage("I_IN <- M_OUT", msg);
             }
             // table.printToConsole();
 

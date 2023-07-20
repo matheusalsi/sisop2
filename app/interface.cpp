@@ -61,6 +61,14 @@ void InterfaceSS::run(){
             std::clog << "INTERFACE: ";
             std::clog << "Recebi mensagem de GERENCIAMENTO: " << msg << std::endl;
             #endif
+            std::vector<std::string> messageParameters;
+            std::string messageFunction;
+            getFunctionAndParametersFromMessage(msg, messageFunction, messageParameters);
+            if(messageFunction == "SEND_UPDATE") {
+                
+            } else if(messageFunction == "SEND_MAC"){
+                //todo
+            }
             
             
             handleUpdateMessage(msg);
@@ -179,4 +187,24 @@ void InterfaceSS::handleExit(){
     g_stop_execution = true;
     setRunning(false);
 
+}
+
+void InterfaceSS::getFunctionAndParametersFromMessage(std::string message, std::string &function, std::vector<std::string> &parameters){
+    std::string delimiter = "&";
+    std::string token;
+    // Pega qual o tipo da função que será chamada
+    int firstDelimiter = message.find(delimiter);
+    function = message.substr(0, firstDelimiter);
+    message.erase(0, firstDelimiter + 1);
+
+    size_t start = 0;
+    size_t end = message.find('&');
+    while (end != std::string::npos) {
+        std::string ip = message.substr(start, end - start);
+        parameters.push_back(ip);
+        start = end + 1;
+        end = message.find('&',start);
+    }
+    std::string lastParameter = message.substr(start);
+    parameters.push_back(lastParameter);
 }

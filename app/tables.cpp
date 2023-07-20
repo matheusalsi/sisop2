@@ -126,3 +126,18 @@ std::string WOLTable::getMacFromHostname(std::string hostname)
 const std::map<std::string, WOLTableLine>& WOLTable::getLines(){
     return lines;
 }
+
+std::string WOLTable::tableToString(){
+    std::stringstream ss;
+
+    for (const auto& entry : lines) {
+        const WOLTableLine& line = entry.second;
+
+        ss << line.ip << "@";
+        ss << line.hostname << "@";
+        ss << line.mac << "@";
+        ss << line.status << "%"; // Use % as the entry delimiter
+    }
+
+    return ss.str();
+}
