@@ -1,14 +1,11 @@
 #include "management.h"
 
-// void ManagementSS::start(){
-//     WOLSubsystem::start();
-// }
-
 void ManagementSS::run(){
     // IPs recentemente adicionados e removidos
     std::vector<std::string> addedIPs;
-    std::vector<std::string> removedIPs;
-
+    std::vector<std::string> removedIPs;    
+    if (isManager())
+        table.printToConsole();    
 
     while(isRunning()){
         addedIPs.clear();
@@ -42,6 +39,8 @@ void ManagementSS::run(){
 
                 if (!table.addLine(hostname, mac, ip, std::string("N/A")))
                     std::cout << "Não foi possível adicionar o: " << ip << " à tabela" << std::endl;
+                if (messageFunction == "ADD_MANAGER")
+                    table.printToConsole();
             }
             else if (messageFunction == "REMOVE_CLIENT"){
                 std::string ip = messageParameters[0];
@@ -51,9 +50,10 @@ void ManagementSS::run(){
 
                 if (!table.removeLine(ip))
                     std::cout << "Não foi possível remover o: " << ip << std::endl;
+                else   
+                    table.printToConsole();
             }
 
-            
         }
         /*
         
@@ -83,6 +83,7 @@ void ManagementSS::run(){
                 // Apenas atualiza na tabela aqueles que permaneceram após sincronização com discovery
                 if(table.hasIP(clientIP)){
                     table.updateLineStatus(clientIP, clientStatus);
+                    table.printToConsole();
                 }
             }
         }
@@ -148,13 +149,3 @@ void ManagementSS::getFunctionAndParametersFromMessage(std::string message, std:
     std::string lastParameter = message.substr(start);
     parameters.push_back(lastParameter);
 }
-
-// void ManagementSS::stop(){
-//     
-// }
-
-// void ManagementSS::processMessage(std::string message){
-
-// }
-
-

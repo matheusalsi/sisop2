@@ -9,7 +9,6 @@
 #include <sys/ioctl.h>
 #include <linux/if.h>
 
-#include "globals.h"
 
 bool g_stop_execution = false;
 
@@ -44,7 +43,6 @@ void initMailboxes(DiscoverySS& discoverySS, ManagementSS& managementSS, Interfa
     connectMailboxes(discoverySS.getMailbox(), "D_IN <- I_OUT", interfaceSS.getMailbox(), "I_OUT -> D_IN");
     
 }
-
 
 
 int main(int argc, char *argv[])
@@ -94,7 +92,7 @@ int main(int argc, char *argv[])
     interfaceSS.start();
 
     // Somente a interface pode encerrar o programa
-    while(!g_stop_execution){
+    while(!g_stop_execution && interfaceSS.isRunning()){
 
     }
 
