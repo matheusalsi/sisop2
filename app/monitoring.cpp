@@ -21,29 +21,10 @@ void MonitoringSS::run(){
     while (isRunning()) {
         if(isManager()){ // Cliente - envia os pacotes de sleep status requests
             
-            // Sincronização com gerenciamento
-            while (!mailBox.isEmpty("M_OUT -> MO_IN")){
-                std::string messageIpUpdates;
-                mailBox.readMessage("M_OUT -> MO_IN", messageIpUpdates);
-                #ifdef DEBUG
-                std::clog << "MONITORING: ";
-                std::clog << "Mensagem de GERENCIAMENTO: " << messageIpUpdates << std::endl;
-                #endif
-                
-
-                char type = messageIpUpdates[0]; // Primeiro caractere determina se IP está entrando ou saíndo
-                std::string ip = messageIpUpdates.substr(1);
-
-                // Atualiza ips a monitorar
-                if(type == '+'){
-                    ipList.insert(ip);
-                }
-                else{
-                    ipList.erase(ip);
-                }
-            }
+            // Obtém IPs da tabela
+            const auto ipList = tableManager->getKnownIps();
             
-            if (ipList.size() == 0) {
+            if (ipList->size() == 0) {
                 #ifdef DEBUG
                 std::clog << "MONITORING: ";
                 std::clog << "Não há clientes para monitorar" << std::endl;
@@ -61,7 +42,7 @@ void MonitoringSS::run(){
             std::vector<std::thread> packetSenderThreadStatus;
 
             
-            for(auto ip: ipList) {
+            for(auto ip: *ipList) {
                 char ipStr[INET_ADDRSTRLEN];
                 
                 strcpy(ipStr, ip.c_str());
@@ -162,17 +143,8 @@ void MonitoringSS::sendSleepStatusPackets(char ipStr[INET_ADDRSTRLEN]){
     std::string message;
 
     inet_ntop(AF_INET, &clientAddrIn.sin_addr, ipStr, INET_ADDRSTRLEN);
-    message.append("UPDATE_CLIENT_STATUS");
-    message.append("&");
-    message.append(ipStr);
-    message.append("&");
-    
-    if (asleep)
-        message.append("asleep");
-    else
-        message.append("awake");
-    
-    mailBox.writeMessage("M_IN <- MO_OUT", message);
+    tableManager->updateClient(!asleep, ipStr);
+
 };
 
 // // Le a mensagem com a lista de ips clientes da tabela de gerenciamento com formato 17.172.224.47&17.172.224.48&17.172.224.49

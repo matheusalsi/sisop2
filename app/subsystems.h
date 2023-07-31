@@ -18,7 +18,7 @@
 
 #include "socket.h"
 #include "packet.h"
-#include "mailbox.h"
+#include "management.h"
 
 
 // Subsistema genérico do WakeOnLan, que roda numa thread própria
@@ -37,19 +37,18 @@ class WOLSubsystem{
     virtual void run()=0; // Chamada por start, thread principal do subsistema
     
     protected:
-    SubsystemMailBox mailBox;
-
+    
+    // Gerenciador da tabela, com o qual o subsistema se comunica para escritas/leituras
+    TableManager* tableManager;
+    
     public:
-    WOLSubsystem(bool isManager);
+    WOLSubsystem(bool isManager, TableManager* tableManager) : manager(isManager), tableManager(tableManager) {};
     ~WOLSubsystem();
     bool isManager();
     bool isRunning();
     
     virtual void start(); // Inicializa execução do subsistema
     virtual void stop(); // Encerra execução do subsistema
-
-    SubsystemMailBox& getMailbox();
-
 
 };
 

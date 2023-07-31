@@ -71,16 +71,24 @@ void DiscoverySS::run(){
 
                 discoverySocket.sendPacketToClient(&sendPacket, clientAddrIn);
 
+                // Adiciona cliente à tabela
+
                 // Envia mensagem para o gerenciamento para adicionar o cliente à tabela
                 std::string message;
                 char ipStr[INET_ADDRSTRLEN];
                 inet_ntop(AF_INET, &clientAddrIn.sin_addr, ipStr, INET_ADDRSTRLEN);
-                message.append("ADD_CLIENT");
-                message.append("&");
-                message.append(ipStr);
-                message.append("&");
-                message.append(macAndHostnameClient);
-                mailBox.writeMessage("M_IN <- D_OUT", message);
+                
+                // Info
+                IpInfo ipInfo;
+                // Separa hostname e mac da string contida no packet
+                std::string hostname, mac;
+                hostname = macAndHostnameClient.substr(0, macAndHostnameClient.find('&'));
+                mac = macAndHostnameClient.substr(macAndHostnameClient.find('&'));
+                ipInfo.hostname = hostname;
+                ipInfo.mac = mac;
+                ipInfo.awake = true; // Por default, awake
+
+                tableManager->insertClient(ipStr, ipInfo);
 
             }
 
@@ -94,82 +102,69 @@ void DiscoverySS::run(){
                 sendPacket.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT | ACKNOWLEDGE;
                 discoverySocket.sendPacketToClient(&sendPacket, clientAddrIn);
 
-                // Envia mensagem para o gerenciamento para remover o cliente da tabela
-                std::string messageExit;
+                // Remove da tabela
                 char ipStr[INET_ADDRSTRLEN];
                 inet_ntop(AF_INET, &clientAddrIn.sin_addr, ipStr, INET_ADDRSTRLEN);
-                messageExit.append("REMOVE_CLIENT");
-                messageExit.append("&");
-                messageExit.append(ipStr);
-                mailBox.writeMessage("M_IN <- D_OUT", messageExit);
+
+                tableManager->removeClient(ipStr);
+
 
             }
     
         }
         else{ // Client - envia os pacotes de sleep service discovery e sleep service exit
             sockaddr_in serverAddrIn;
-            if(foundManager && !hasLeft){ // Verifica se é necessário mandar packet informando saída do sistema
+            // TO-DO: ARRUMAR ESSA PARTE
+            // if(foundManager && !hasLeft){ // Verifica se é necessário mandar packet informando saída do sistema
 
-                // Espera chegar alguma mensagem na caixa de mensagens
-                if(mailBox.isEmpty("I_OUT -> D_IN")){
-                    continue;
-                }
-   
-                std::string messageInterfaceLeave;
-                mailBox.readMessage("I_OUT -> D_IN", messageInterfaceLeave);
+            //     // O cliente já sabe qual o endereço do servidor
+            //     discoverySocket.setSocketBroadcastToFalse(); 
 
-                #ifdef DEBUG
-                std::clog << "DISCOVERY: ";
-                std::clog << "Mensagem de INTERFACE: " << messageInterfaceLeave << std::endl; 
-                #endif
+            //     // Envia pacote
+            //     sendSleepExitPackets(serverAddrIn);
+            //     // Espera resposta do servidor
 
-                // O cliente já sabe qual o endereço do servidor
-                discoverySocket.setSocketBroadcastToFalse(); 
+            //     //*******************************************************
+            //     /*
+            //     if(!discoverySocket.receivePacketFromServer(&recvPacket)){
+            //         // Timeout
+            //         continue;
+            //     }
+            //     */
+            //     try{
+            //         if(!discoverySocket.receivePacketFromServer(&recvPacket)){
+            //         // Timeout
+            //         continue;
+            //         }
+            //     } catch(const std::runtime_error& e) {
+            //         #ifdef DEBUG
+            //         std::clog << "DISCOVERY: ";
+            //         std::clog << "Exceção capturada na thread de confirmação da saída! " << e.what() << std::endl;
+            //         #endif
+            //     }
 
-                // Envia pacote
-                sendSleepExitPackets(serverAddrIn);
-                // Espera resposta do servidor
+            //     // Checa se é resposta do manager
+            //     if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT | ACKNOWLEDGE)){
+            //         #ifdef DEBUG
+            //         std::clog << "DISCOVERY: ";
+            //         std::clog << "Recebi um pacote do manager de confirmação da saída!" << std::endl;
+            //         #endif
+            //     }
 
-                //*******************************************************
-                /*
-                if(!discoverySocket.receivePacketFromServer(&recvPacket)){
-                    // Timeout
-                    continue;
-                }
-                */
-                try{
-                    if(!discoverySocket.receivePacketFromServer(&recvPacket)){
-                    // Timeout
-                    continue;
-                    }
-                } catch(const std::runtime_error& e) {
-                    #ifdef DEBUG
-                    std::clog << "DISCOVERY: ";
-                    std::clog << "Exceção capturada na thread de confirmação da saída! " << e.what() << std::endl;
-                    #endif
-                }
+            //     hasLeft = true; // Seta como true
 
-                // Checa se é resposta do manager
-                if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT | ACKNOWLEDGE)){
-                    #ifdef DEBUG
-                    std::clog << "DISCOVERY: ";
-                    std::clog << "Recebi um pacote do manager de confirmação da saída!" << std::endl;
-                    #endif
-                }
-
-                hasLeft = true; // Seta como true
-
-                // Avisa para a interface que o cliente foi removido
-                #ifdef DEBUG
-                std::clog << "DISCOVERY: ";
-                std::clog << "Estou avisando a minha interface que eu fui removido" << std::endl;
-                #endif
-                std::string messageTableRemoved;
-                messageTableRemoved.append("I_WAS_REMOVED");
-                mailBox.writeMessage("I_IN <- D_OUT", messageTableRemoved);
-                // setRunning(false); // Discovery encerra a execução do participante
-            }
-            else if (!hasLeft){ // Busca o manager
+            //     // // Avisa para a interface que o cliente foi removido
+            //     // TO-DO: REMOVER
+            //     // #ifdef DEBUG
+            //     // std::clog << "DISCOVERY: ";
+            //     // std::clog << "Estou avisando a minha interface que eu fui removido" << std::endl;
+            //     // #endif
+            //     // std::string messageTableRemoved;
+            //     // messageTableRemoved.append("I_WAS_REMOVED");
+            //     // mailBox.writeMessage("I_IN <- D_OUT", messageTableRemoved);
+            //     // // setRunning(false); // Discovery encerra a execução do participante
+            // }
+            if (!foundManager){ // Busca o manager
 
                 // Envia pacote
                 sendSleepDiscoverPackets();
@@ -204,19 +199,26 @@ void DiscoverySS::run(){
                     #endif
                 }
 
-                // Adiciona o manager ao seu gerenciamento
+                // TO-DO: Duplicado. Ver como resolver isso.  
+                // Adiciona o manager à tabela
                 std::string macAndHostnameManager;
                 macAndHostnameManager = recvPacket._payload;
 
                 std::string message;
+                IpInfo ipInfo;
+
                 char ipStr[INET_ADDRSTRLEN];
                 inet_ntop(AF_INET, &serverAddrIn.sin_addr, ipStr, INET_ADDRSTRLEN);
-                message.append("ADD_MANAGER");
-                message.append("&");
-                message.append(ipStr);
-                message.append("&");
-                message.append(macAndHostnameManager);
-                mailBox.writeMessage("M_IN <- D_OUT", message);
+
+                // Separa hostname e mac da string contida no packet
+                std::string hostname, mac;
+                hostname = macAndHostnameManager.substr(0, macAndHostnameManager.find('&'));
+                mac = macAndHostnameManager.substr(macAndHostnameManager.find('&'));
+                ipInfo.hostname = hostname;
+                ipInfo.mac = mac;
+                ipInfo.awake = true; // Por default, awake
+
+                tableManager->insertClient(ipStr, ipInfo);
                 
                 foundManager = true;
             }

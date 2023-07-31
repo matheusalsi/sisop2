@@ -1,9 +1,5 @@
 #include "subsystems.h"
 
-WOLSubsystem::WOLSubsystem(bool manager){
-    this->manager = manager;
-}
-
 // O subsistema só pode ser destruído APÓS ter parado!
 // Isso porque senão a thread vai tentar rodar sobre um objeto já destruído.
 // Inclusive isso causa erro de função puramente virtual: com o objeto destruído,
@@ -36,9 +32,4 @@ void WOLSubsystem::stop(){
         delete runThread;
     }
 
-}
-
-SubsystemMailBox& WOLSubsystem::getMailbox()
-{
-    return mailBox;
 }
