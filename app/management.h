@@ -9,8 +9,9 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include "globals.h"
 
-#define DEBUG_TABLE
+//#define DEBUG_TABLE
 
 #define HOSTNAME_ROW_WIDTH 20
 #define MACADDRESS_ROW_WIDTH 17

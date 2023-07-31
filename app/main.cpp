@@ -26,17 +26,6 @@ int main(int argc, char *argv[])
     // Handling de Ctrl+c
     signal(SIGINT, handleSigint);
 
-    // Logging para arquivo
-    std::ofstream log;
-    if(manager){
-        log.open("log_manager.txt");
-    }
-    else{
-        log.open("log_participant.txt");
-    }
-
-    std::clog.rdbuf(log.rdbuf());
-
     // Timestamp
     auto end = std::chrono::system_clock::now();
     std::time_t end_time = std::chrono::system_clock::to_time_t(end);
@@ -75,8 +64,6 @@ int main(int argc, char *argv[])
     std::cout << "Subsistema MONITORING encerrado..." << std::endl;
     interfaceSS.stop();
     std::cout << "Subsistema INTERFACE encerrado..." << std::endl;
-
-    log.close();
 
     std::cout << "----- FINALIZADO! -----" << std::endl;
 

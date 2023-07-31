@@ -23,7 +23,7 @@ class InterfaceSS : public WOLSubsystem{
     // Thread de input
     void inputThread();
     // Realiza print
-    void printInterface();
+    void printInterfaceThread();
     
     
 

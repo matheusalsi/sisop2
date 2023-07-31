@@ -42,53 +42,60 @@ void InterfaceSS::stop(){
 
 void InterfaceSS::run(){
 
+    std::thread printThread(&InterfaceSS::printInterfaceThread, this);
     std::thread inputThread(&InterfaceSS::inputThread, this);
 
     while(isRunning()){
-        printInterface();
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
     }
 
     if(waitingInput){
         // Força terminação da thread de input
         pthread_cancel(inputThread.native_handle());
+        printLock.unlock();
     }
     inputThread.join();
+    printThread.join();
 
 }
 
-void InterfaceSS::printInterface(){
-    // Controle do console
-    printLock.lock();
+void InterfaceSS::printInterfaceThread(){
+    
+    while(isRunning()){
+        // Controle do console
+        printLock.lock();
 
-    // Caso especial do "EXIT"
-    if(g_exiting){
-        return;
+        // Caso especial do "EXIT"
+        if(g_exiting){
+            return;
+        }
+
+
+        std::system("clear"); // Limpa tela (linux)
+
+        auto end = std::chrono::system_clock::now();
+        std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+        if(isManager()){
+            std::cout << "ESTAÇÃO MANAGER" << std::endl;
+        }
+        else{
+            std::cout << "ESTAÇÃO PARTICIPANTE" << std::endl;
+        }
+        std::cout << "Última atividade: " << std::ctime(&end_time);
+
+        // Obtém tabela
+        auto tableString = tableManager->getTablePrintString();
+
+        std::cout << tableString;
+
+        // Informações de como realizar input
+        std::cout << "Aperte ENTER para entrar no modo de input" << std::endl;
+
+        // Fim de printing na tela
+        printLock.unlock();
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
-
-
-    std::system("clear"); // Limpa tela (linux)
-
-    auto end = std::chrono::system_clock::now();
-    std::time_t end_time = std::chrono::system_clock::to_time_t(end);
-    if(isManager()){
-        std::cout << "ESTAÇÃO MANAGER" << std::endl;
-    }
-    else{
-        std::cout << "ESTAÇÃO PARTICIPANTE" << std::endl;
-    }
-    std::cout << "Última atividade: " << std::ctime(&end_time);
-
-    // Obtém tabela
-    auto tableString = tableManager->getTablePrintString();
-
-    std::cout << tableString;
-
-    // Informações de como realizar input
-    std::cout << "Aperte ENTER para entrar no modo de input" << std::endl;
-
-    // Fim de printing na tela
-    printLock.unlock();
 
 }
 

@@ -31,6 +31,9 @@ void DiscoverySS::stop(){
 
 
 void DiscoverySS::run(){
+
+    int exitTimeoutCount = 20; // Máximo de timeouts até desistir de notificar saída
+
     while(isRunning()){
         packet recvPacket, sendPacket;
 
@@ -144,7 +147,12 @@ void DiscoverySS::run(){
                 try{
                     if(!discoverySocket.receivePacketFromServer(&recvPacket)){
                     // Timeout
-                    continue;
+                        if(exitTimeoutCount-- > 0){
+                            continue;
+                        }
+                        else{
+                            std::cout << "Não foi possível contatar o manager sobre a saída (excesso de timeouts)" << std::endl;
+                        }
                     }
                 } catch(const std::runtime_error& e) {
                     #ifdef DEBUG
@@ -163,6 +171,7 @@ void DiscoverySS::run(){
 
                 // Finalmente, encerra o subsistema
                 setRunning(false);
+                continue;
 
             }
 
