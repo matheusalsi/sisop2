@@ -83,7 +83,7 @@ void DiscoverySS::run(){
                 // Separa hostname e mac da string contida no packet
                 std::string hostname, mac;
                 hostname = macAndHostnameClient.substr(0, macAndHostnameClient.find('&'));
-                mac = macAndHostnameClient.substr(macAndHostnameClient.find('&'));
+                mac = macAndHostnameClient.substr(macAndHostnameClient.find('&')+1);
                 ipInfo.hostname = hostname;
                 ipInfo.mac = mac;
                 ipInfo.awake = true; // Por default, awake
@@ -213,7 +213,7 @@ void DiscoverySS::run(){
                 // Separa hostname e mac da string contida no packet
                 std::string hostname, mac;
                 hostname = macAndHostnameManager.substr(0, macAndHostnameManager.find('&'));
-                mac = macAndHostnameManager.substr(macAndHostnameManager.find('&'));
+                mac = macAndHostnameManager.substr(macAndHostnameManager.find('&')+1);
                 ipInfo.hostname = hostname;
                 ipInfo.mac = mac;
                 ipInfo.awake = true; // Por default, awake

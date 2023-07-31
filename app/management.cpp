@@ -17,6 +17,7 @@ void TableManager::insertClient(std::string ip, IpInfo ipInfo){
     // Adição à tabela (assume-se que não está na tabela ainda)
     ipStatusTable[ip] = ipInfo;
     knownIps.insert(ip);
+    macHostnameMap[ipInfo.hostname] = ipInfo.mac;
 
     #ifdef DEBUG_TABLE
     std::clog << "Inserindo cliente de ip " << ip << std::endl;
@@ -33,7 +34,9 @@ void TableManager::removeClient(std::string ip){
     tableLock.lock();
 
     // Remoção da tabela (assume-se que já está na tabela)
+    macHostnameMap.erase(ipStatusTable[ip].hostname);
     knownIps.erase(ip);
+    ipStatusTable.erase(ip);
 
     #ifdef DEBUG_TABLE
     std::clog << "Removendo cliente de ip " << ip << std::endl;
@@ -123,6 +126,20 @@ std::string TableManager::getTablePrintString(){
 
 
     return ss.str();
+}
+
+std::string TableManager::getMacFromHostname(std::string hostname){
+    std::string r_str; // Retorna "" se mac não existe 
+    // Acesso à tabela
+    tableLock.lock();
+    
+    r_str = macHostnameMap[hostname];
+
+    // Libera acesso
+    tableLock.unlock();
+
+    return r_str;
+
 }
 
 

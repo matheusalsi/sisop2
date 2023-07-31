@@ -31,6 +31,8 @@ class TableManager{
     std::map<std::string, IpInfo> ipStatusTable;
     // Ips conhecidos (acesso rápido)
     std::set<std::string> knownIps;
+    // Hostname->Mac, para wakeonlan
+    std::map<std::string, std::string> macHostnameMap;
 
 
     // Lock de acesso à tabela principal
@@ -46,6 +48,8 @@ class TableManager{
     const std::set<std::string>* getKnownIps();
     // Retorna tabela como string para print
     std::string getTablePrintString();
+    // Obtém mac a partir de um hostname
+    std::string getMacFromHostname(std::string hostname);
 
 };
 

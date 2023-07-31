@@ -37,7 +37,7 @@ void InterfaceSS::stop(){
 
 void InterfaceSS::run(){
 
-    //std::thread inputThread(&InterfaceSS::inputThread, this);
+    std::thread inputThread(&InterfaceSS::inputThread, this);
 
     while(isRunning()){
         printInterface();
@@ -49,6 +49,8 @@ void InterfaceSS::run(){
 }
 
 void InterfaceSS::printInterface(){
+    // Controle do console
+    printLock.lock();
 
     std::system("clear"); // Limpa tela (linux)
 
@@ -67,38 +69,88 @@ void InterfaceSS::printInterface(){
 
     std::cout << tableString;
 
+    // Informações de como realizar input
+    std::cout << "Aperte ENTER para entrar no modo de input" << std::endl;
+
+    // Fim de printing na tela
+    printLock.unlock();
+
 }
 
-// void InterfaceSS::inputThread(){
-//     std::string input;
-//     std::regex regex("wakeup (.*)");
-//     std::smatch match;
-//     while(isRunning()){
-//         std::getline(std::cin, input); // Pega espaços
-//         if (isManager()){ // Fazer aqui o WAKEUP hostname
-//             if(std::regex_search(input, match, regex)){
-//                 /* wakeonlan é chamado com: 
-//                 std::string wakeonlan = "WAKEONLAN" + mac
-//                 system(wakeonlan.c_str())
-//                 */
-                
-//                 auto hostname = match[0].str();
-//                 auto mac = localTable.getMacFromHostname(hostname);
-//                 std::string wakeonlan = "wakeonlan ";
-//                 wakeonlan.append(mac);
-                
-//                 std::cout << "Enviando comando \"" << wakeonlan << "\"" << std::endl;
+void InterfaceSS::inputThread(){
+    std::string input;
+    std::regex regex("wakeup (.*)");
+    std::smatch match;
 
-//                 system(wakeonlan.c_str());
-
-//             }
-//         }
-//         else if (input == "EXIT"){
-//             handleExit();
-//         }
-//     }
+    bool validInput;
     
-// }
+    while(isRunning()){
+        
+        // Espera por ENTER para entrar em modo de input
+        input = std::cin.get();
+
+        if(input != "\n"){
+            continue;
+        }
+        
+        // Enter pressionado; força parada de print
+        printLock.lock();
+
+        std::cout << "(MODO INPUT)" << std::endl;
+        std::cout << "Digite seu input:" << std::endl;
+
+        std::getline(std::cin, input); // Pega espaços
+        
+        if (isManager()){ // Fazer aqui o WAKEUP hostname
+            if(std::regex_search(input, match, regex)){
+                
+                validInput = true;
+
+                /* wakeonlan é chamado com: 
+                std::string wakeonlan = "WAKEONLAN" + mac
+                system(wakeonlan.c_str())
+                */
+                
+                auto hostname = match[1].str();
+                std::cout << hostname << std::endl;
+
+                auto mac = tableManager->getMacFromHostname(hostname);
+                if(mac.empty()){
+                    std::cout << "Não foi possível obter o mac desse hostname!" << std::endl;
+                }
+                else{
+                    std::string wakeonlan = "wakeonlan ";
+                    wakeonlan.append(mac);
+                    
+                    std::cout << "Enviando comando \"" << wakeonlan << "\"" << std::endl;
+
+                    system(wakeonlan.c_str());
+                }
+                
+
+            }
+        }
+        else if (input == "EXIT"){
+            validInput = true;
+            std::cout << "Nesse ponto, realizaria exit." << std::endl;
+            //handleExit();
+        }
+
+        // Input inválido
+        if(!validInput){
+            std::cout << "Input inválido" << std::endl;
+        }
+        // Reset
+        validInput = false;
+
+        std::cout << "Voltando à tela das tabelas em 5 segundos" << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+
+        printLock.unlock();
+
+    }
+    
+}
 
 // void InterfaceSS::handleExit(){
 //     if(exiting){

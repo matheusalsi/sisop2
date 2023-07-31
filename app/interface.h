@@ -10,16 +10,18 @@
 #include <condition_variable>
 #include <regex>
 #include "tables.h"
-#include "globals.h"
 
 // Subsistema de interface
 class InterfaceSS : public WOLSubsystem{
 
     private:
     
-    // Thread de input
-    //void inputThread();
+    // Lock para print; obtenção de input trava print da tabela
+    std::mutex printLock;
 
+    // Thread de input
+    void inputThread();
+    // Realiza print
     void printInterface();
     
     // // Faz o exit
