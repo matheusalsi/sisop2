@@ -30,10 +30,15 @@
     
 // }
 
+void InterfaceSS::start(){
+    WOLSubsystem::start();
+    waitingInput = false;
+}
+
 void InterfaceSS::stop(){
-    //handleExit();
     WOLSubsystem::stop();
 }
+
 
 void InterfaceSS::run(){
 
@@ -44,13 +49,23 @@ void InterfaceSS::run(){
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 
-    //inputThread.join();
+    if(waitingInput){
+        // Força terminação da thread de input
+        pthread_cancel(inputThread.native_handle());
+    }
+    inputThread.join();
 
 }
 
 void InterfaceSS::printInterface(){
     // Controle do console
     printLock.lock();
+
+    // Caso especial do "EXIT"
+    if(g_exiting){
+        return;
+    }
+
 
     std::system("clear"); // Limpa tela (linux)
 
@@ -86,10 +101,19 @@ void InterfaceSS::inputThread(){
     
     while(isRunning()){
         
+        // Caso especial do "EXIT". Previne que cin "tranque"
+        if(g_exiting){
+            return;
+        }
+
+        // Sinaliza que está esperando input
+        waitingInput = true;
+
         // Espera por ENTER para entrar em modo de input
         input = std::cin.get();
 
         if(input != "\n"){
+            waitingInput = false;
             continue;
         }
         
@@ -100,19 +124,17 @@ void InterfaceSS::inputThread(){
         std::cout << "Digite seu input:" << std::endl;
 
         std::getline(std::cin, input); // Pega espaços
+
+        waitingInput = false;
         
         if (isManager()){ // Fazer aqui o WAKEUP hostname
             if(std::regex_search(input, match, regex)){
                 
                 validInput = true;
 
-                /* wakeonlan é chamado com: 
-                std::string wakeonlan = "WAKEONLAN" + mac
-                system(wakeonlan.c_str())
-                */
+                // WakeOnLan
                 
                 auto hostname = match[1].str();
-                std::cout << hostname << std::endl;
 
                 auto mac = tableManager->getMacFromHostname(hostname);
                 if(mac.empty()){
@@ -132,8 +154,11 @@ void InterfaceSS::inputThread(){
         }
         else if (input == "EXIT"){
             validInput = true;
-            std::cout << "Nesse ponto, realizaria exit." << std::endl;
-            //handleExit();
+            std::cout << "Encerrando o programa..." << std::endl;
+            g_exiting = true;
+            printLock.unlock();
+            return;
+
         }
 
         // Input inválido
@@ -176,7 +201,7 @@ void InterfaceSS::inputThread(){
 //     }
     
 //     // Força parada do programa
-//     g_stop_execution = true;
+//     g_exiting = true;
 //     setRunning(false);
 
 // }

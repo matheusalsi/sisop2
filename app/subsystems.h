@@ -1,7 +1,7 @@
 #ifndef SUBSYSTEMS_H
 #define SUBSYSTEMS_H
 
-
+#define DEBUG
 
 #include <iostream>
 #include <vector>
@@ -19,7 +19,7 @@
 #include "socket.h"
 #include "packet.h"
 #include "management.h"
-
+#include "globals.h"
 
 // Subsistema genérico do WakeOnLan, que roda numa thread própria
 class WOLSubsystem{
@@ -30,13 +30,13 @@ class WOLSubsystem{
 
     private:
     bool manager; // define se o subsistema atua no modo gerente
-    std::thread* runThread; // thread principal do SS
     bool running; // define se o SS está rodando. Caso não esteja, threads devem parar de rodar
     // void setRunning(bool value);
     
     virtual void run()=0; // Chamada por start, thread principal do subsistema
     
     protected:
+    std::thread* runThread; // thread principal do SS
     
     // Gerenciador da tabela, com o qual o subsistema se comunica para escritas/leituras
     TableManager* tableManager;

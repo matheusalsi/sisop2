@@ -3,11 +3,10 @@
 void MonitoringSS::start(){
     monitoringSocket.openSocket();
      
+    monitoringSocket.setSocketTimeoutMS(100);
+
     if(!isManager()){ // Participante (Servidor)
         monitoringSocket.bindSocket();
-    }
-    else{ // Manager (Cliente)
-        monitoringSocket.setSocketTimeoutMS(100);
     }
     WOLSubsystem::start();
 };
@@ -19,6 +18,7 @@ void MonitoringSS::stop(){
 
 void MonitoringSS::run(){
     while (isRunning()) {
+
         if(isManager()){ // Cliente - envia os pacotes de sleep status requests
             
             // Obtém IPs da tabela
@@ -80,7 +80,12 @@ void MonitoringSS::run(){
             sockaddr_in managerAddrIn;
             packet sendPacketStatusRequest, recvPacketStatusRequest;
 
-            monitoringSocket.receivePacketFromClients(&recvPacketStatusRequest, managerAddrIn);
+            if(!monitoringSocket.receivePacketFromClients(&recvPacketStatusRequest, managerAddrIn)){
+                #ifdef DEBUG
+                std::clog << "Timeout..." << std::endl;
+                #endif                
+                continue;
+            }
             
             #ifdef DEBUG
             char ipStr[INET_ADDRSTRLEN];

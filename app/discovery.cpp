@@ -14,8 +14,18 @@ void DiscoverySS::start(){
 }
 
 void DiscoverySS::stop(){
+    
+    if(isManager()){
+        WOLSubsystem::stop();
+    }
+    else{
+        // Espera a saída do sistema
+        if(runThread != NULL){
+            runThread->join();
+            delete runThread;
+        }
+    }
 
-    WOLSubsystem::stop();
     discoverySocket.closeSocket();
 }
 
@@ -114,56 +124,48 @@ void DiscoverySS::run(){
         }
         else{ // Client - envia os pacotes de sleep service discovery e sleep service exit
             sockaddr_in serverAddrIn;
-            // TO-DO: ARRUMAR ESSA PARTE
-            // if(foundManager && !hasLeft){ // Verifica se é necessário mandar packet informando saída do sistema
+            
+            if(g_exiting){ // Verifica se é necessário mandar packet informando saída do sistema
 
-            //     // O cliente já sabe qual o endereço do servidor
-            //     discoverySocket.setSocketBroadcastToFalse(); 
+                // O cliente já sabe qual o endereço do servidor
+                discoverySocket.setSocketBroadcastToFalse(); 
 
-            //     // Envia pacote
-            //     sendSleepExitPackets(serverAddrIn);
-            //     // Espera resposta do servidor
+                // Envia pacote
+                sendSleepExitPackets(serverAddrIn);
+                // Espera resposta do servidor
 
-            //     //*******************************************************
-            //     /*
-            //     if(!discoverySocket.receivePacketFromServer(&recvPacket)){
-            //         // Timeout
-            //         continue;
-            //     }
-            //     */
-            //     try{
-            //         if(!discoverySocket.receivePacketFromServer(&recvPacket)){
-            //         // Timeout
-            //         continue;
-            //         }
-            //     } catch(const std::runtime_error& e) {
-            //         #ifdef DEBUG
-            //         std::clog << "DISCOVERY: ";
-            //         std::clog << "Exceção capturada na thread de confirmação da saída! " << e.what() << std::endl;
-            //         #endif
-            //     }
+                //*******************************************************
+                /*
+                if(!discoverySocket.receivePacketFromServer(&recvPacket)){
+                    // Timeout
+                    continue;
+                }
+                */
+                try{
+                    if(!discoverySocket.receivePacketFromServer(&recvPacket)){
+                    // Timeout
+                    continue;
+                    }
+                } catch(const std::runtime_error& e) {
+                    #ifdef DEBUG
+                    std::clog << "DISCOVERY: ";
+                    std::clog << "Exceção capturada na thread de confirmação da saída! " << e.what() << std::endl;
+                    #endif
+                }
 
-            //     // Checa se é resposta do manager
-            //     if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT | ACKNOWLEDGE)){
-            //         #ifdef DEBUG
-            //         std::clog << "DISCOVERY: ";
-            //         std::clog << "Recebi um pacote do manager de confirmação da saída!" << std::endl;
-            //         #endif
-            //     }
+                // Checa se é resposta do manager
+                if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT | ACKNOWLEDGE)){
+                    #ifdef DEBUG
+                    std::clog << "DISCOVERY: ";
+                    std::clog << "Recebi um pacote do manager de confirmação da saída!" << std::endl;
+                    #endif
+                }
 
-            //     hasLeft = true; // Seta como true
+                // Finalmente, encerra o subsistema
+                setRunning(false);
 
-            //     // // Avisa para a interface que o cliente foi removido
-            //     // TO-DO: REMOVER
-            //     // #ifdef DEBUG
-            //     // std::clog << "DISCOVERY: ";
-            //     // std::clog << "Estou avisando a minha interface que eu fui removido" << std::endl;
-            //     // #endif
-            //     // std::string messageTableRemoved;
-            //     // messageTableRemoved.append("I_WAS_REMOVED");
-            //     // mailBox.writeMessage("I_IN <- D_OUT", messageTableRemoved);
-            //     // // setRunning(false); // Discovery encerra a execução do participante
-            // }
+            }
+
             if (!foundManager){ // Busca o manager
 
                 // Envia pacote

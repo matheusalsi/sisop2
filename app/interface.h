@@ -9,7 +9,8 @@
 #include <iomanip>
 #include <condition_variable>
 #include <regex>
-#include "tables.h"
+#include "globals.h"
+#include <pthread.h>
 
 // Subsistema de interface
 class InterfaceSS : public WOLSubsystem{
@@ -24,6 +25,12 @@ class InterfaceSS : public WOLSubsystem{
     // Realiza print
     void printInterface();
     
+    
+
+    // Handling de Ctrl+c
+    static void handleSIGINT(int signum);
+    bool waitingInput;
+
     // // Faz o exit
     // void handleExit();
     // bool exiting;
@@ -31,6 +38,7 @@ class InterfaceSS : public WOLSubsystem{
     public:
     InterfaceSS(bool isManager, TableManager* tableManager) : WOLSubsystem(isManager, tableManager) {};
 
+    void start();
     void stop();
     void run();
 

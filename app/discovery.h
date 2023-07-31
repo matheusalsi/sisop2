@@ -18,7 +18,6 @@ class DiscoverySS : public WOLSubsystem{
 
     // Específicos para modo "participante" (client)
     bool foundManager = false;
-    bool hasLeft = false;
 
     // Thread que envia pacotes "Sleep Service Discovery" enquanto não há resposta do manager
     void sendSleepDiscoverPackets();

@@ -7,12 +7,13 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <linux/if.h>
+#include "globals.h"
 
 
-bool g_stop_execution = false;
+bool g_exiting = false;
 
 void handleSigint(int signum){
-    g_stop_execution = true;
+    g_exiting = true;
 }
 
 bool isManager(int argc){
@@ -61,25 +62,23 @@ int main(int argc, char *argv[])
     monitoringSS.start();
     interfaceSS.start();
 
-    // Somente a interface pode encerrar o programa
-    while(!g_stop_execution && interfaceSS.isRunning()){
+    // Espera encerramento do subsistema de descoberta
+    while(!g_exiting){
 
     }
 
-    #ifdef DEBUG
-    std::clog << "Encerrando a execução" << std:: endl;
-    #endif
-
+    std::cout << "Encerrando thread principal..." << std::endl;
 
     discoverySS.stop();
+    std::cout << "Subsistema DISCOVERY encerrado..." << std::endl;
     monitoringSS.stop();
+    std::cout << "Subsistema MONITORING encerrado..." << std::endl;
     interfaceSS.stop();
+    std::cout << "Subsistema INTERFACE encerrado..." << std::endl;
 
-    #ifdef DEBUG
     log.close();
-    #endif
 
-    std::cout << "FINALIZADO!" << std::endl;
+    std::cout << "----- FINALIZADO! -----" << std::endl;
 
     return 0;
 }
