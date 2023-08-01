@@ -16,6 +16,7 @@ class MonitoringSS : public WOLSubsystem {
 
     private:
     Socket monitoringSocket; // Socket para envio/recepção de packets "Sleep Status Request"
+    char* managerIp;
     
     // void setIpList(std::vector<std::string>& ipList, std::string messageClientsIps);
     // std::vector<std::string> getIplist();
@@ -30,7 +31,7 @@ class MonitoringSS : public WOLSubsystem {
 
     MonitoringSS(bool isManager, TableManager* tableManager) :
         WOLSubsystem(isManager, tableManager),
-        monitoringSocket(MONITORING_PORT, false)
+        monitoringSocket(MONITORING_PORT)
         // ipList({})
     {};
 

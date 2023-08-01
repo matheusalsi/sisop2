@@ -1,11 +1,11 @@
 #include "discovery.h"
 
 void DiscoverySS::start(){
-    discoverySocket.openSocket();
+    discoverySocket.oldOpenSocket();
     discoverySocket.setSocketTimeoutMS(100);
 
     if(isManager()){ // Server
-        discoverySocket.bindSocket();
+        discoverySocket.oldBindSocket();
     }
     else{ // Client
         discoverySocket.setSocketBroadcastToTrue(); 
@@ -43,14 +43,14 @@ void DiscoverySS::run(){
             sockaddr_in clientAddrIn;
 
             /*
-            if(!discoverySocket.receivePacketFromClients(&recvPacket, clientAddrIn)){
+            if(!discoverySocket.oldreceivePacketFromClients(&recvPacket, clientAddrIn)){
                 // Timeout
                 continue;
             }
             */
 
             try{
-                if(!discoverySocket.receivePacketFromClients(&recvPacket, clientAddrIn)){
+                if(!discoverySocket.oldreceivePacketFromClients(&recvPacket, clientAddrIn)){
                     continue;
                 }
             } catch(const std::runtime_error& e) {
@@ -82,7 +82,7 @@ void DiscoverySS::run(){
                 std::string packetPayload = getHostname() + "&" + getMACAddress();
                 strcpy(sendPacket._payload, packetPayload.c_str());
 
-                discoverySocket.sendPacketToClient(&sendPacket, clientAddrIn);
+                discoverySocket.oldsendPacketToClient(&sendPacket, clientAddrIn);
 
                 // Adiciona cliente à tabela
 
@@ -113,7 +113,7 @@ void DiscoverySS::run(){
                 
                 // Retorna para o cliente pacote confirmando que ele recebeu o pacote de descoberta
                 sendPacket.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT | ACKNOWLEDGE;
-                discoverySocket.sendPacketToClient(&sendPacket, clientAddrIn);
+                discoverySocket.oldsendPacketToClient(&sendPacket, clientAddrIn);
 
                 // Remove da tabela
                 char ipStr[INET_ADDRSTRLEN];
@@ -139,13 +139,13 @@ void DiscoverySS::run(){
 
                 //*******************************************************
                 /*
-                if(!discoverySocket.receivePacketFromServer(&recvPacket)){
+                if(!discoverySocket.oldreceivePacketFromServer(&recvPacket)){
                     // Timeout
                     continue;
                 }
                 */
                 try{
-                    if(!discoverySocket.receivePacketFromServer(&recvPacket)){
+                    if(!discoverySocket.oldreceivePacketFromServer(&recvPacket)){
                     // Timeout
                         if(exitTimeoutCount-- > 0){
                             continue;
@@ -182,14 +182,14 @@ void DiscoverySS::run(){
                 // Espera resposta do servidor
                 //***************************************************************
                 /*
-                if(!discoverySocket.receivePacketFromServer(&recvPacket)){
+                if(!discoverySocket.oldreceivePacketFromServer(&recvPacket)){
                     // Timeout
                     continue;
                 }
                 */
 
                 try{
-                    if(!discoverySocket.receivePacketFromServer(&recvPacket)){
+                    if(!discoverySocket.oldreceivePacketFromServer(&recvPacket)){
                     // Timeout
                     continue;
                     }
@@ -249,7 +249,7 @@ void DiscoverySS::sendSleepDiscoverPackets(){
     std::clog << "Enviando packet de procura..." << std::endl;
     #endif
 
-    discoverySocket.sendPacketToServer(&sendPacket, BROADCAST, NULL);
+    discoverySocket.oldsendPacketToServer(&sendPacket, BROADCAST, NULL);
 }
 
 void DiscoverySS::sendSleepExitPackets(struct sockaddr_in serverAddrIn){
@@ -260,7 +260,7 @@ void DiscoverySS::sendSleepExitPackets(struct sockaddr_in serverAddrIn){
     std::clog << "DISCOVERY: ";
     std::clog << "Enviando packet de saída..."<< std::endl;
     #endif
-    discoverySocket.sendPacketToServer(&sendPacket, DIRECT_TO_SERVER, &serverAddrIn);
+    discoverySocket.oldsendPacketToServer(&sendPacket, DIRECT_TO_IP, &serverAddrIn);
 
 }
 

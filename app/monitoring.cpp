@@ -1,12 +1,12 @@
 #include "monitoring.h"
 
 void MonitoringSS::start(){
-    monitoringSocket.openSocket();
+    monitoringSocket.oldOpenSocket();
      
     monitoringSocket.setSocketTimeoutMS(100);
 
     if(!isManager()){ // Participante (Servidor)
-        monitoringSocket.bindSocket();
+        monitoringSocket.oldBindSocket();
     }
     WOLSubsystem::start();
 };
@@ -80,7 +80,7 @@ void MonitoringSS::run(){
             sockaddr_in managerAddrIn;
             packet sendPacketStatusRequest, recvPacketStatusRequest;
 
-            if(!monitoringSocket.receivePacketFromClients(&recvPacketStatusRequest, managerAddrIn)){
+            if(!monitoringSocket.oldreceivePacketFromClients(&recvPacketStatusRequest, managerAddrIn)){
                 #ifdef DEBUG
                 std::clog << "Timeout..." << std::endl;
                 #endif                
@@ -103,7 +103,7 @@ void MonitoringSS::run(){
 
                 // Retorna para o servidor pacote confirmando que ele recebeu o pacote de status
                 sendPacketStatusRequest.type = SLEEP_STATUS_REQUEST | ACKNOWLEDGE;
-                monitoringSocket.sendPacketToClient(&sendPacketStatusRequest, managerAddrIn);
+                monitoringSocket.oldsendPacketToClient(&sendPacketStatusRequest, managerAddrIn);
             }
         }
     }
@@ -123,10 +123,10 @@ void MonitoringSS::sendSleepStatusPackets(char ipStr[INET_ADDRSTRLEN]){
     inet_pton(AF_INET, ipStr, &(clientAddrIn.sin_addr));
 
     // Manda o pacote de sleepStatus enquanto não recebe confirmação e não há timeOut
-    monitoringSocket.sendPacketToServer(&sendPacketSleepStatus, DIRECT_TO_SERVER, &clientAddrIn);
+    monitoringSocket.oldsendPacketToServer(&sendPacketSleepStatus, DIRECT_TO_IP, &clientAddrIn);
 
     try {
-        if (monitoringSocket.receivePacketFromClients(&recvPacketSleepStatus, managerAddrin)){
+        if (monitoringSocket.oldreceivePacketFromClients(&recvPacketSleepStatus, managerAddrin)){
             if(recvPacketSleepStatus.type == (SLEEP_STATUS_REQUEST | ACKNOWLEDGE)) {
                 #ifdef DEBUG
                 std::clog << "MONITORING: ";

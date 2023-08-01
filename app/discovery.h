@@ -16,6 +16,8 @@ class DiscoverySS : public WOLSubsystem{
     std::string hostname;
     std::string macaddress;
 
+    char* managerIp;
+
     // Específicos para modo "participante" (client)
     bool foundManager = false;
 
@@ -33,7 +35,7 @@ class DiscoverySS : public WOLSubsystem{
 
     DiscoverySS(bool isManager, TableManager* tableManager) : 
         WOLSubsystem(isManager, tableManager),
-        discoverySocket(DISCOVERY_PORT, false),
+        discoverySocket(DISCOVERY_PORT),
         hostname(""),
         macaddress("")
     {};
