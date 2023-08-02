@@ -115,41 +115,28 @@ void MonitoringSS::run(){
 
 void MonitoringSS::sendSleepStatusPackets(char ipStr[INET_ADDRSTRLEN]){
     packet sendPacketSleepStatus, recvPacketSleepStatus;
-    sockaddr_in managerAddrin;
+    char managerIp[INET_ADDRSTRLEN];
     bool asleep = true;
     sendPacketSleepStatus.type = SLEEP_STATUS_REQUEST;
 
-    sockaddr_in clientAddrIn;
-    inet_pton(AF_INET, ipStr, &(clientAddrIn.sin_addr));
-
     // Manda o pacote de sleepStatus enquanto não recebe confirmação e não há timeOut
-    monitoringSocket.oldsendPacketToServer(&sendPacketSleepStatus, DIRECT_TO_IP, &clientAddrIn);
+    monitoringSocket.sendPacket(sendPacketSleepStatus, DIRECT_TO_IP, ipStr);
+    
 
-    try {
-        if (monitoringSocket.oldreceivePacketFromClients(&recvPacketSleepStatus, managerAddrin)){
-            if(recvPacketSleepStatus.type == (SLEEP_STATUS_REQUEST | ACKNOWLEDGE)) {
-                #ifdef DEBUG
-                std::clog << "MONITORING: ";
-                std::clog << "Recebi um pacote do cliente com o status awake" << std::endl;
-                #endif
-                asleep = false;
-            } 
-        }
-    } 
-    catch(const std::runtime_error& e) {
-        #ifdef DEBUG
-        std::clog << "MONITORING: ";
-        std::clog << "Exceção capturada na thread de sleep status packets: " << e.what() << std::endl;
-        #endif
+    if (monitoringSocket.receivePacket(recvPacketSleepStatus, managerIp) > 0){
+        if(recvPacketSleepStatus.type == (SLEEP_STATUS_REQUEST | ACKNOWLEDGE)) {
+            #ifdef DEBUG
+            std::clog << "MONITORING: ";
+            std::clog << "Recebi um pacote do cliente com o status awake" << std::endl;
+            #endif
+            asleep = false;
+        } 
     }
-
-
+   
     // Caso tenha timeOut atualiza o status para sleep do contrário atualiza para awake
     std::string message;
 
-    inet_ntop(AF_INET, &clientAddrIn.sin_addr, ipStr, INET_ADDRSTRLEN);
     tableManager->updateClient(!asleep, ipStr);
-
 };
 
 // // Le a mensagem com a lista de ips clientes da tabela de gerenciamento com formato 17.172.224.47&17.172.224.48&17.172.224.49

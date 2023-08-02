@@ -91,17 +91,16 @@ void Socket::setSocketBroadcastToFalse(){
 }
 // FUNÇÕES DE TROCAS DE PACOTES
 
-int Socket::sendPacket(struct packet& packet, int send_type, char* ipDst){
+int Socket::sendPacket(struct packet& packet, int send_type, char ipDst[INET_ADDRSTRLEN]){
     struct sockaddr_in dstSockAddrIn;
     in_addr dstAddrIn;
-    
+
     if (send_type == DIRECT_TO_IP){
         if (ipDst == NULL){
             std::string errorMsg = "Erro: IP de destino não definido na porta " + std::to_string(port);
             throw std::runtime_error(errorMsg);
         }
         else{
-            // Converte o IP de destino para o endereço binário de rede
             inet_pton(AF_INET, ipDst, &dstAddrIn);
         }
     }
@@ -118,15 +117,21 @@ int Socket::sendPacket(struct packet& packet, int send_type, char* ipDst){
     return n;
 }
 
-int Socket::receivePacket(struct packet& packet, char* ipSrc){
+int Socket::receivePacket(struct packet& packet, char ipSrc[INET_ADDRSTRLEN]){
     sockaddr_in srcSockAddrIn;
+    in_addr srcAddrIn;
+    srcAddrIn.s_addr = INADDR_ANY;
+
+    setAddrInInfo(srcSockAddrIn, srcAddrIn);
+
     socklen_t srcLen = sizeof(srcSockAddrIn);
+
     int n = recvfrom(socketFD, &packet, sizeof(struct packet), 0, (struct sockaddr *) &srcSockAddrIn, &srcLen);
 
     // Recebeu com sucesso o pacote
     if (n > 0){
         // Converte o endereço binário de rede para o IP de quem enviou
-        inet_ntop(AF_INET, &(srcSockAddrIn.sin_addr), ipSrc, INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, &srcSockAddrIn.sin_addr, ipSrc, INET_ADDRSTRLEN);
     }
     return n;
 }

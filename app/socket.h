@@ -60,9 +60,9 @@ class Socket{
     void setSocketBroadcastToFalse();
 
     // Envia um pacote, especificando o tipo de envio e retornando se teve sucesso no envio ou não
-    int sendPacket(struct packet& packet, int send_type, char* ipDst = NULL);
+    int sendPacket(struct packet& packet, int send_type, char ipDst[INET_ADDRSTRLEN]);
     // Recebe um pacote e atualiza as informações de que enviou o pacote, retornando se teve sucesso no recebimento ou não
-    int receivePacket(struct packet& packet, char* ipSrc);
+    int receivePacket(struct packet& packet, char ipSrc[INET_ADDRSTRLEN]);
 
     // Envia um pacote para um cliente
     void oldsendPacketToClient(struct packet* sendPacketServer, struct sockaddr_in clientAddrIn); 
