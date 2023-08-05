@@ -9,10 +9,6 @@
 #define SLEEP_STATUS_REQUEST 0b1000
 #define SLEEP_STATUS_REQUEST_
 
-
-
-
-
 typedef struct packet{
     unsigned short int type; //Tipo do pacote (p.ex. DATA | CMD)
     char _payload[64]; //Dados da mensagem (será utilizado para pegar o Hostname e MAC)

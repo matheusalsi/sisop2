@@ -4,7 +4,7 @@
 #include <fstream>
 #include "subsystems.h"
 
-#define DISCOVERY_PORT 7575
+#define DISCOVERY_PORT 27575
 
 // Subsistema de descoberta
 class DiscoverySS : public WOLSubsystem{
@@ -16,16 +16,17 @@ class DiscoverySS : public WOLSubsystem{
     std::string hostname;
     std::string macaddress;
 
-    char* managerIp;
-
     // Específicos para modo "participante" (client)
     bool foundManager = false;
 
+    // Ip do manager
+    char managerIpStr[INET_ADDRSTRLEN];
+
     // Thread que envia pacotes "Sleep Service Discovery" enquanto não há resposta do manager
     void sendSleepDiscoverPackets();
-    void sendSleepExitPackets(struct sockaddr_in serverAddrIn);
+    void sendSleepExitPackets();
 
-    public:
+public:
     void start();
     void stop();
     void run();
