@@ -39,8 +39,7 @@ void DiscoverySS::run(){
             // Fica esperando por pacotes de algum client       
             if(discoverySocket.receivePacket(recvPacket, clientIpStr) < 0){
                 continue;
-            }
- 
+            } 
 
             #ifdef DEBUG
             char buffer[INET_ADDRSTRLEN];
@@ -68,21 +67,8 @@ void DiscoverySS::run(){
 
                 // Adiciona cliente à tabela
                 // Envia mensagem para o gerenciamento para adicionar o cliente à tabela
-                std::string message;
-                
-                // Info
-                IpInfo ipInfo;
-                // Separa hostname e mac da string contida no packet
-                std::string hostname, mac;
-                hostname = macAndHostnameClient.substr(0, macAndHostnameClient.find('&'));
-                mac = macAndHostnameClient.substr(macAndHostnameClient.find('&')+1);
-                ipInfo.hostname = hostname;
-                ipInfo.mac = mac;
-                ipInfo.awake = true; // Por default, awake
-
-                tableManager->insertClient(clientIpStr, ipInfo);
+                prepareAndSendToTable(macAndHostnameClient, clientIpStr);
             }
-
             else if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT)){ 
                 #ifdef DEBUG
                 std::clog << "DISCOVERY: ";
@@ -95,8 +81,7 @@ void DiscoverySS::run(){
 
                 // Remove da tabela
                 tableManager->removeClient(clientIpStr);
-            }
-    
+            }    
         }
         else{ // Client - envia os pacotes de sleep service discovery e sleep service exit
             if (!foundManager){ // Busca o manager
@@ -120,20 +105,8 @@ void DiscoverySS::run(){
                 std::string macAndHostnameManager;
                 macAndHostnameManager = recvPacket._payload;
 
-                std::string message;
-                IpInfo ipInfo;
-
-                // Separa hostname e mac da string contida no packet
-                std::string hostname, mac;
-                hostname = macAndHostnameManager.substr(0, macAndHostnameManager.find('&'));
-                mac = macAndHostnameManager.substr(macAndHostnameManager.find('&')+1);
-                ipInfo.hostname = hostname;
-                ipInfo.mac = mac;
-                ipInfo.awake = true; // Por default, awake
-
-                std::cout << managerIpStr << std::endl;
-                tableManager->insertClient(managerIpStr, ipInfo);
-                
+                // Envia mensagem para o gerenciamento para adicionar o manager à tabela do cliente.
+                prepareAndSendToTable(macAndHostnameManager, managerIpStr);        
                 foundManager = true;
             }
                         
@@ -156,13 +129,13 @@ void DiscoverySS::run(){
                 }
 
                 // Checa se é resposta do manager
+                #ifdef DEBUG
                 if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT | ACKNOWLEDGE)){
-                    #ifdef DEBUG
                     std::clog << "DISCOVERY: ";
                     std::clog << "Recebi um pacote do manager de confirmação da saída!" << std::endl;
-                    #endif
                 }
-
+                #endif
+                
                 // Finalmente, encerra o subsistema
                 setRunning(false);
                 continue;
@@ -196,6 +169,22 @@ void DiscoverySS::sendSleepExitPackets(){
     #endif
   
     discoverySocket.sendPacket(sendPacket, DIRECT_TO_IP, managerIpStr);
+}
+
+void DiscoverySS::prepareAndSendToTable(std::string macAndHostname, char IpStr[INET_ADDRSTRLEN]){
+    // Envia mensagem para o gerenciamento para adicionar o cliente à tabela
+    std::string message;   
+    IpInfo ipInfo;
+
+    // Separa hostname e mac da string contida no packet
+    std::string hostname, mac;
+    hostname = macAndHostname.substr(0, macAndHostname.find('&'));
+    mac = macAndHostname.substr(macAndHostname.find('&')+1);
+    ipInfo.hostname = hostname;
+    ipInfo.mac = mac;
+    ipInfo.awake = true; // Por default, awake
+
+    tableManager->insertClient(IpStr, ipInfo);      
 }
 
 std::string DiscoverySS::getHostname(){

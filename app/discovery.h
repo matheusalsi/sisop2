@@ -25,6 +25,8 @@ class DiscoverySS : public WOLSubsystem{
     // Thread que envia pacotes "Sleep Service Discovery" enquanto não há resposta do manager
     void sendSleepDiscoverPackets();
     void sendSleepExitPackets();
+    // Adiciona cliente e manager à tabela
+    void prepareAndSendToTable(std::string macAndHostname, char IpStr[INET_ADDRSTRLEN]);
 
 public:
     void start();
