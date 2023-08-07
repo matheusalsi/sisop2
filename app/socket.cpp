@@ -1,6 +1,6 @@
 #include "socket.h"
 
-Socket::Socket(int port){
+Socket::Socket(uint16_t port){
     this->port = port;
 };
 
@@ -13,12 +13,10 @@ void Socket::openSocket(){
 
 void Socket::bindSocket(){
     struct sockaddr_in serverSockAddrIn;
-
     serverSockAddrIn.sin_family = AF_INET;
     serverSockAddrIn.sin_port = htons(port);
     serverSockAddrIn.sin_addr.s_addr = INADDR_ANY;
     
-
     bzero(&(serverSockAddrIn.sin_zero), 8);
     if (bind(socketFD, (struct sockaddr *) &serverSockAddrIn, sizeof(struct sockaddr)) < 0){
         std::string errorMsg = "Erro com o bind do socket na porta " + std::to_string(port);
@@ -29,7 +27,6 @@ void Socket::bindSocket(){
 void Socket::closeSocket(){
     close(this->socketFD);
 }
-
 
 void Socket::setSocketTimeoutMS(int timeMS){
     struct timeval tv;
@@ -53,8 +50,6 @@ void Socket::setSocketBroadcastToFalse(){
 // FUNÇÕES DE TROCAS DE PACOTES
 bool Socket::sendPacket(struct packet& packet, int send_type, uint16_t portDst, std::string* ipDstStr){
     struct sockaddr_in dstSockAddrIn;
-
-    // Seta as informações do destinatário do pacote
     dstSockAddrIn.sin_family = AF_INET;
     dstSockAddrIn.sin_port = htons(portDst);
 
@@ -82,14 +77,13 @@ bool Socket::sendPacket(struct packet& packet, int send_type, uint16_t portDst, 
 
 bool Socket::receivePacket(struct packet& packet, uint16_t& portSrc, std::string& ipSrcStr){
     sockaddr_in srcSockAddrIn;   
-
     socklen_t srcLen = sizeof(srcSockAddrIn);
 
     int n = recvfrom(socketFD, &packet, sizeof(struct packet), 0, (struct sockaddr *) &srcSockAddrIn, &srcLen);
 
     // Recebeu com sucesso o pacote
     if (n > 0){
-        // Converte o endereço binário de rede para o IP de quem enviou
+        // Obtém a porta e o IP de quem enviou
         ipSrcStr = inet_ntoa(srcSockAddrIn.sin_addr);
         portSrc = ntohs(srcSockAddrIn.sin_port);
     }

@@ -25,7 +25,7 @@ class Socket{
    
     public:
 
-    Socket(int port);
+    Socket(uint16_t port);
     // Configurações do socket
     void openSocket();
     void bindSocket();

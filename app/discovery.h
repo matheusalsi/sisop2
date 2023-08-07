@@ -28,7 +28,7 @@ class DiscoverySS : public WOLSubsystem{
     // Adiciona cliente e manager à tabela
     void prepareAndSendToTable(std::string macAndHostname, std::string ipStr);
 
-public:
+    public:
     void start();
     void stop();
     void run();
