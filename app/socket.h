@@ -15,55 +15,43 @@
 #include "packet.h"
 
 #define BROADCAST 1 
-#define DIRECT_TO_SERVER 2
-#define LOOPBACK 3
-
+#define DIRECT_TO_IP 2
 
 class Socket{
     private:
 
-    struct sockaddr_in serverAddrIn;
-    socklen_t serverLen;
-    struct sockaddr_in lastClientAddrIn;
-    socklen_t lastClientLen;
-
     int socketFD;
     int port;
-    bool debug;
-
-    void createSocket();
-    // Configura as informações do servidor que serão utilizadas para fazer o bind
-    void setServerInfo();
    
     public:
 
-    Socket(int port, bool debug);
-
-    // Cria um socket, e define as informações que serão utilizadas para bindar o servidor na porta 
+    Socket(uint16_t port);
+    // Configurações do socket
     void openSocket();
-    void closeSocket();
-    // Binda o servidor na porta especificada
     void bindSocket();
-
-    int getSocketDescriptor();
-    struct in_addr getServerBinaryNetworkAddress();
-
+    void closeSocket();
     // Seta quanto tempo o socket vai ficar esperando receber um pacote (se não utilizar essa função ele vai esperar indefinidamente)
     void setSocketTimeoutMS(int time);
     // Define que o socket irá receber ou não pacotes em broadcast. Utilizado pelos clientes
     void setSocketBroadcastToTrue();
     void setSocketBroadcastToFalse();
-
-    // Envia um pacote para um cliente
-    void sendPacketToClient(struct packet* sendPacketServer, struct sockaddr_in clientAddrIn); 
-    // Recebe um pacote de um cliente e retorna as informações do cliente que enviou o pacote
-    bool receivePacketFromClients(struct packet* recvPacketServer, sockaddr_in& clientAddrIn);
-    // Envia um pacote para o servidor, especificando o tipo de envio
-    void sendPacketToServer(struct packet* sendPacketClient, int type,struct sockaddr_in* serverAddrIn);
-    // Recebe um pacote do servidor 
-    bool receivePacketFromServer(struct packet* recvPacketClient);
-    
-    
+    /* 
+    * Envia um pacote para um endereço
+    * @param packet: Pacote a ser enviado
+    * @param send_type: tipo de envio (BROADCAST ou DIRECT_TO_IP)
+    * @param portDst: porta de destino do pacote
+    * @param ipDstStr: ip de destino do pacote (se send_type == DIRECT_TO_IP)
+    * @return: true se o pacote foi enviado com sucesso, false caso contrário
+    */
+    bool sendPacket(struct packet& packet, int send_type, uint16_t portDst, std::string* ipDstStr=NULL);
+    /* 
+    * Recebe um pacote de um endereço
+    * @param packet: referência que será atualizada com o pacote recebido
+    * @param portSrc: refêrencia que será atualizada com a porta de origem do pacote
+    * @param ipSrcStr: refêrencia que será atualizada com o ip de origem do pacote  
+    * @return: true se o pacote foi recebido com sucesso, false caso contrário
+    */
+    bool receivePacket(struct packet& packet, uint16_t& portSrc, std::string& ipSrcStr); 
 };
 
 #endif 

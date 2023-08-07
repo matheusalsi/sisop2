@@ -70,8 +70,9 @@ void InterfaceSS::printInterfaceThread(){
             return;
         }
 
-
+        #ifndef DEBUG
         std::system("clear"); // Limpa tela (linux)
+        #endif
 
         auto end = std::chrono::system_clock::now();
         std::time_t end_time = std::chrono::system_clock::to_time_t(end);

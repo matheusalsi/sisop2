@@ -14,7 +14,6 @@ void DiscoverySS::start(){
 }
 
 void DiscoverySS::stop(){
-    
     if(isManager()){
         WOLSubsystem::stop();
     }
@@ -25,46 +24,27 @@ void DiscoverySS::stop(){
             delete runThread;
         }
     }
-
     discoverySocket.closeSocket();
 }
 
-
 void DiscoverySS::run(){
-
     int exitTimeoutCount = 20; // Máximo de timeouts até desistir de notificar saída
 
     while(isRunning()){
         packet recvPacket, sendPacket;
 
         if(isManager()){ // Server - os pacotes de sleep service discovery e sleep service exit
+            std::string clientIpStr;
+            uint16_t clientPort;
 
-            // Fica esperando por pacotes de algum cliente
-            sockaddr_in clientAddrIn;
-
-            /*
-            if(!discoverySocket.receivePacketFromClients(&recvPacket, clientAddrIn)){
-                // Timeout
+            // Fica esperando por pacotes de algum client       
+            if(!discoverySocket.receivePacket(recvPacket, clientPort, clientIpStr)){
                 continue;
-            }
-            */
-
-            try{
-                if(!discoverySocket.receivePacketFromClients(&recvPacket, clientAddrIn)){
-                    continue;
-                }
-            } catch(const std::runtime_error& e) {
-                #ifdef DEBUG
-                std::clog << "DISCOVERY: ";
-                std::clog << "Exceção capturada na thread de receber pacote " << e.what() << std::endl;
-                #endif
-            }
+            } 
 
             #ifdef DEBUG
-            char buffer[INET_ADDRSTRLEN];
-            inet_ntop( AF_INET, &clientAddrIn.sin_addr, buffer, sizeof( buffer ));
             std::clog << "DISCOVERY: ";
-            std::clog << "Recebi um pacote de " << buffer << "!" << std::endl;
+            std::clog << "Recebi um pacote de " << clientIpStr << "!" << std::endl;
             #endif
 
             // Checa o tipo de pacote: Adicionar ao sistema ou retirar do sistema
@@ -74,7 +54,7 @@ void DiscoverySS::run(){
 
                 #ifdef DEBUG
                 std::clog << "DISCOVERY: ";
-                std::clog << "Estou respondendo o cliente " << buffer << " que quer entrar" << std::endl;
+                std::clog << "Estou respondendo o cliente " << clientIpStr << " que quer entrar" << std::endl;
                 #endif
                 
                 // Retorna para o cliente pacote informando que este é o manager, com suas informações de hostname e MAC
@@ -82,186 +62,128 @@ void DiscoverySS::run(){
                 std::string packetPayload = getHostname() + "&" + getMACAddress();
                 strcpy(sendPacket._payload, packetPayload.c_str());
 
-                discoverySocket.sendPacketToClient(&sendPacket, clientAddrIn);
+                discoverySocket.sendPacket(sendPacket, DIRECT_TO_IP, clientPort, &clientIpStr);
 
                 // Adiciona cliente à tabela
-
                 // Envia mensagem para o gerenciamento para adicionar o cliente à tabela
-                std::string message;
-                char ipStr[INET_ADDRSTRLEN];
-                inet_ntop(AF_INET, &clientAddrIn.sin_addr, ipStr, INET_ADDRSTRLEN);
-                
-                // Info
-                IpInfo ipInfo;
-                // Separa hostname e mac da string contida no packet
-                std::string hostname, mac;
-                hostname = macAndHostnameClient.substr(0, macAndHostnameClient.find('&'));
-                mac = macAndHostnameClient.substr(macAndHostnameClient.find('&')+1);
-                ipInfo.hostname = hostname;
-                ipInfo.mac = mac;
-                ipInfo.awake = true; // Por default, awake
-
-                tableManager->insertClient(ipStr, ipInfo);
-
+                prepareAndSendToTable(macAndHostnameClient, clientIpStr);
             }
-
             else if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT)){ 
                 #ifdef DEBUG
                 std::clog << "DISCOVERY: ";
-                std::clog << "Estou respondendo o cliente " << buffer << " que quer sair" << std::endl;
+                std::clog << "Estou respondendo o cliente " << clientIpStr << " que quer sair" << std::endl;
                 #endif
                 
                 // Retorna para o cliente pacote confirmando que ele recebeu o pacote de descoberta
                 sendPacket.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT | ACKNOWLEDGE;
-                discoverySocket.sendPacketToClient(&sendPacket, clientAddrIn);
+                discoverySocket.sendPacket(sendPacket, DIRECT_TO_IP, clientPort, &clientIpStr);
 
                 // Remove da tabela
-                char ipStr[INET_ADDRSTRLEN];
-                inet_ntop(AF_INET, &clientAddrIn.sin_addr, ipStr, INET_ADDRSTRLEN);
-
-                tableManager->removeClient(ipStr);
-
-
-            }
-    
+                tableManager->removeClient(clientIpStr);
+            }    
         }
         else{ // Client - envia os pacotes de sleep service discovery e sleep service exit
-            sockaddr_in serverAddrIn;
-            
             if(g_exiting){ // Verifica se é necessário mandar packet informando saída do sistema
-
                 // O cliente já sabe qual o endereço do servidor
                 discoverySocket.setSocketBroadcastToFalse(); 
+                u_int16_t managerPort; // DISCOVERY_PORT
 
                 // Envia pacote
-                sendSleepExitPackets(serverAddrIn);
-                // Espera resposta do servidor
-
-                //*******************************************************
-                /*
-                if(!discoverySocket.receivePacketFromServer(&recvPacket)){
-                    // Timeout
-                    continue;
-                }
-                */
-                try{
-                    if(!discoverySocket.receivePacketFromServer(&recvPacket)){
-                    // Timeout
-                        if(exitTimeoutCount-- > 0){
-                            continue;
-                        }
-                        else{
-                            std::cout << "Não foi possível contatar o manager sobre a saída (excesso de timeouts)" << std::endl;
-                        }
-                    }
-                } catch(const std::runtime_error& e) {
+                packet sendPacket;
+                sendPacket.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT;
+                #ifdef DEBUG
+                std::clog << "DISCOVERY: ";
+                std::clog << "Enviando packet de saída..."<< std::endl;
+                #endif
+            
+                if (!discoverySocket.sendPacket(sendPacket, DIRECT_TO_IP, DISCOVERY_PORT, &managerIpStr)){
                     #ifdef DEBUG
-                    std::clog << "DISCOVERY: ";
-                    std::clog << "Exceção capturada na thread de confirmação da saída! " << e.what() << std::endl;
+                    std::clog << "Não foi possível enviar o pacote de saída" << std::endl;
                     #endif
+                }
+
+                // Espera resposta do servidor               
+                if(!discoverySocket.receivePacket(recvPacket, managerPort, managerIpStr)){
+                // Timeout
+                    if(exitTimeoutCount--> 0){
+                        continue;
+                    }
+                    else{
+                        std::cout << "Não foi possível contatar o manager sobre a saída (excesso de timeouts)" << std::endl;
+                    }
                 }
 
                 // Checa se é resposta do manager
+                #ifdef DEBUG
                 if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT | ACKNOWLEDGE)){
-                    #ifdef DEBUG
                     std::clog << "DISCOVERY: ";
                     std::clog << "Recebi um pacote do manager de confirmação da saída!" << std::endl;
-                    #endif
                 }
-
+                #endif
+                
                 // Finalmente, encerra o subsistema
                 setRunning(false);
                 continue;
-
             }
-
-            if (!foundManager){ // Busca o manager
-
+            else if (!foundManager){ // Busca o manager
                 // Envia pacote
-                sendSleepDiscoverPackets();
-                // Espera resposta do servidor
-                //***************************************************************
-                /*
-                if(!discoverySocket.receivePacketFromServer(&recvPacket)){
-                    // Timeout
-                    continue;
-                }
-                */
+                packet sendPacket;
 
-                try{
-                    if(!discoverySocket.receivePacketFromServer(&recvPacket)){
-                    // Timeout
-                    continue;
-                    }
-                } catch(const std::runtime_error& e) {
+                sendPacket.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND;
+                std::string packetPayload = getHostname() + "&" + getMACAddress();
+                strcpy(sendPacket._payload, packetPayload.c_str());                
+                #ifdef DEBUG
+                std::clog << "DISCOVERY: ";
+                std::clog << "Enviando packet de procura..." << std::endl;
+                #endif
+                
+                if (!discoverySocket.sendPacket(sendPacket, BROADCAST, DISCOVERY_PORT)){
                     #ifdef DEBUG
-                    std::clog << "DISCOVERY: ";
-                    std::clog << "Exceção capturada na thread de confirmação que eu entrei! " << e.what() << std::endl;
+                    std::clog << "Não foi possível enviar o pacote de procura" << std::endl;
                     #endif
+                }
+
+                u_int16_t managerPort; // DISCOVERY_PORT
+                // Espera resposta do servidor/manager        
+                if(!discoverySocket.receivePacket(recvPacket, managerPort, managerIpStr)){
+                    continue;
                 }
                 
-                serverAddrIn.sin_addr = discoverySocket.getServerBinaryNetworkAddress();
-
+                #ifdef DEBUG
                 // Checa se é resposta do manager
                 if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND | ACKNOWLEDGE)){
-                    #ifdef DEBUG
                     std::clog << "DISCOVERY: ";
                     std::clog << "Recebi um pacote do manager de confirmação que eu entrei!" << std::endl;
-                    #endif
                 }
+                #endif
 
                 // TO-DO: Duplicado. Ver como resolver isso.  
                 // Adiciona o manager à tabela
                 std::string macAndHostnameManager;
                 macAndHostnameManager = recvPacket._payload;
 
-                std::string message;
-                IpInfo ipInfo;
-
-                char ipStr[INET_ADDRSTRLEN];
-                inet_ntop(AF_INET, &serverAddrIn.sin_addr, ipStr, INET_ADDRSTRLEN);
-
-                // Separa hostname e mac da string contida no packet
-                std::string hostname, mac;
-                hostname = macAndHostnameManager.substr(0, macAndHostnameManager.find('&'));
-                mac = macAndHostnameManager.substr(macAndHostnameManager.find('&')+1);
-                ipInfo.hostname = hostname;
-                ipInfo.mac = mac;
-                ipInfo.awake = true; // Por default, awake
-
-                tableManager->insertClient(ipStr, ipInfo);
-                
+                // Envia mensagem para o gerenciamento para adicionar o manager à tabela do cliente.
+                prepareAndSendToTable(macAndHostnameManager, managerIpStr);        
                 foundManager = true;
             }
         }
     }
 };
 
-void DiscoverySS::sendSleepDiscoverPackets(){
-    packet sendPacket;
+void DiscoverySS::prepareAndSendToTable(std::string macAndHostname, std::string ipStr){
+    // Envia mensagem para o gerenciamento para adicionar o cliente à tabela
+    std::string message;   
+    IpInfo ipInfo;
 
-    sendPacket.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND;
-    std::string packetPayload = getHostname() + "&" + getMACAddress();
-    strcpy(sendPacket._payload, packetPayload.c_str());
+    // Separa hostname e mac da string contida no packet
+    std::string hostname, mac;
+    hostname = macAndHostname.substr(0, macAndHostname.find('&'));
+    mac = macAndHostname.substr(macAndHostname.find('&')+1);
+    ipInfo.hostname = hostname;
+    ipInfo.mac = mac;
+    ipInfo.awake = true; // Por default, awake
 
-    #ifdef DEBUG
-    std::clog << "DISCOVERY: ";
-    std::clog << "Enviando packet de procura..." << std::endl;
-    #endif
-
-    discoverySocket.sendPacketToServer(&sendPacket, BROADCAST, NULL);
-}
-
-void DiscoverySS::sendSleepExitPackets(struct sockaddr_in serverAddrIn){
-    packet sendPacket;
-    sendPacket.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT;
-
-    #ifdef DEBUG
-    std::clog << "DISCOVERY: ";
-    std::clog << "Enviando packet de saída..."<< std::endl;
-    #endif
-    discoverySocket.sendPacketToServer(&sendPacket, DIRECT_TO_SERVER, &serverAddrIn);
-
+    tableManager->insertClient(ipStr, ipInfo);      
 }
 
 std::string DiscoverySS::getHostname(){
