@@ -111,8 +111,8 @@ void MonitoringSS::run(){
 void MonitoringSS::sendSleepStatusPackets(std::string ipstr){
     packet sendPacketSleepStatus, recvPacketSleepStatus;
 
-    std::string managerIp;
-    uint16_t managerPort;
+    std::string participantIp;
+    uint16_t participantPort;
 
     bool awake = false;
     sendPacketSleepStatus.type = SLEEP_STATUS_REQUEST;
@@ -120,7 +120,7 @@ void MonitoringSS::sendSleepStatusPackets(std::string ipstr){
     // Manda o pacote de sleepStatus enquanto não recebe confirmação e não há timeOut
     monitoringSocket.sendPacket(sendPacketSleepStatus, DIRECT_TO_IP, MONITORING_PORT, &ipstr);
     
-    if (monitoringSocket.receivePacket(recvPacketSleepStatus, managerPort, managerIp)){
+    if (monitoringSocket.receivePacket(recvPacketSleepStatus, participantPort, participantIp)){
         if(recvPacketSleepStatus.type == (SLEEP_STATUS_REQUEST | ACKNOWLEDGE)) {
             #ifdef DEBUG
             std::clog << "MONITORING: ";
