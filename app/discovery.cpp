@@ -87,8 +87,20 @@ void DiscoverySS::run(){
                 // O cliente já sabe qual o endereço do servidor
                 discoverySocket.setSocketBroadcastToFalse(); 
                 u_int16_t managerPort; // DISCOVERY_PORT
+
                 // Envia pacote
-                sendSleepExitPackets();
+                packet sendPacket;
+                sendPacket.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT;
+                #ifdef DEBUG
+                std::clog << "DISCOVERY: ";
+                std::clog << "Enviando packet de saída..."<< std::endl;
+                #endif
+            
+                if (!discoverySocket.sendPacket(sendPacket, DIRECT_TO_IP, DISCOVERY_PORT, &managerIpStr)){
+                    #ifdef DEBUG
+                    std::clog << "Não foi possível enviar o pacote de saída" << std::endl;
+                    #endif
+                }
 
                 // Espera resposta do servidor               
                 if(!discoverySocket.receivePacket(recvPacket, managerPort, managerIpStr)){
@@ -115,7 +127,22 @@ void DiscoverySS::run(){
             }
             else if (!foundManager){ // Busca o manager
                 // Envia pacote
-                sendSleepDiscoverPackets();
+                packet sendPacket;
+
+                sendPacket.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND;
+                std::string packetPayload = getHostname() + "&" + getMACAddress();
+                strcpy(sendPacket._payload, packetPayload.c_str());                
+                #ifdef DEBUG
+                std::clog << "DISCOVERY: ";
+                std::clog << "Enviando packet de procura..." << std::endl;
+                #endif
+                
+                if (!discoverySocket.sendPacket(sendPacket, BROADCAST, DISCOVERY_PORT)){
+                    #ifdef DEBUG
+                    std::clog << "Não foi possível enviar o pacote de procura" << std::endl;
+                    #endif
+                }
+
                 u_int16_t managerPort; // DISCOVERY_PORT
                 // Espera resposta do servidor/manager        
                 if(!discoverySocket.receivePacket(recvPacket, managerPort, managerIpStr)){
@@ -142,43 +169,6 @@ void DiscoverySS::run(){
         }
     }
 };
-
-void DiscoverySS::sendSleepDiscoverPackets(){
-    packet sendPacket;
-
-    sendPacket.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND;
-    std::string packetPayload = getHostname() + "&" + getMACAddress();
-    strcpy(sendPacket._payload, packetPayload.c_str());
-    
-    #ifdef DEBUG
-    std::clog << "DISCOVERY: ";
-    std::clog << "Enviando packet de procura..." << std::endl;
-    #endif
-    
-    if (!discoverySocket.sendPacket(sendPacket, BROADCAST, DISCOVERY_PORT)){
-        #ifdef DEBUG
-        std::clog << "Não foi possível enviar o pacote de procura" << std::endl;
-        #endif
-    }
-
-
-}
-
-void DiscoverySS::sendSleepExitPackets(){
-    packet sendPacket;
-    sendPacket.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT;
-
-    #ifdef DEBUG
-    std::clog << "DISCOVERY: ";
-    std::clog << "Enviando packet de saída..."<< std::endl;
-    #endif
-  
-    if (!discoverySocket.sendPacket(sendPacket, DIRECT_TO_IP, DISCOVERY_PORT, &managerIpStr)){
-        #ifdef DEBUG
-        std::clog << "Não foi possível enviar o pacote de saída" << std::endl;
-        #endif
-    }
-}
 
 void DiscoverySS::prepareAndSendToTable(std::string macAndHostname, std::string ipStr){
     // Envia mensagem para o gerenciamento para adicionar o cliente à tabela
