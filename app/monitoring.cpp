@@ -71,13 +71,14 @@ void MonitoringSS::run(){
             std::clog << "Estou esperando um packet em " << MONITORING_PORT << std::endl;
             #endif
 
-            // Fica esperando por pacotes do manager
-            std::string managerIp;
+            // Fica esperando por pacotes do manager, mas pode também
+            // receber uma resposta do manager antigo
+            std::string answeringIP;
             u_int16_t managerPort;
 
             packet sendPacketStatusRequest, recvPacketStatusRequest;
 
-            if(!monitoringSocket.receivePacket(recvPacketStatusRequest, managerPort, managerIp)){
+            if(!monitoringSocket.receivePacket(recvPacketStatusRequest, managerPort, answeringIP)){
                 #ifdef DEBUG
                 std::clog << "Timeout..." << std::endl;
                 #endif                
@@ -86,19 +87,35 @@ void MonitoringSS::run(){
             
             #ifdef DEBUG
             std::clog << "MONITORING: ";
-            std::clog << "Recebi um pacote de " << managerIp << "!" << std::endl;
+            std::clog << "Recebi um pacote de " << answeringIP << "!" << std::endl;
             #endif
 
             // Checa se o tipo do pacote está correto e responde
             if(recvPacketStatusRequest.type == SLEEP_STATUS_REQUEST) {
-                #ifdef DEBUG
-                std::clog << "MONITORING: ";
-                std::clog << "Estou respondendo o manager " << managerIp << " sobre meu status" << std::endl;
-                #endif
 
-                // Retorna para o servidor pacote confirmando que ele recebeu o pacote de status
-                sendPacketStatusRequest.type = SLEEP_STATUS_REQUEST | ACKNOWLEDGE;
-                monitoringSocket.sendPacket(sendPacketStatusRequest, DIRECT_TO_IP, managerPort, &managerIp);
+                // Checa se o IP que mandou o pacote é o gerenciador
+                std::string managerIP = tableManager->getManagerIP();
+                if(answeringIP == managerIP){
+                    #ifdef DEBUG
+                    std::clog << "MONITORING: ";
+                    std::clog << "Estou respondendo o manager " << managerIp << " sobre meu status" << std::endl;
+                    #endif
+                    sendPacketStatusRequest.type = SLEEP_STATUS_REQUEST | ACKNOWLEDGE;
+                    monitoringSocket.sendPacket(sendPacketStatusRequest, DIRECT_TO_IP, managerPort, &managerIP);
+                }
+                // Se não é, respondemos com o IP do gerenciador
+                else{
+                    // Retorna para o servidor pacote confirmando que ele recebeu o pacote de status
+                    // TO-DO: Mandar também a tabela atual
+                    #ifdef DEBUG
+                    std::clog << "MONITORING: ";
+                    std::clog << "Um possivel manager antigo (" << managerIp << ") esta me monitorando; Irei atualiza-lo" << std::endl;
+                    #endif
+                    sendPacketStatusRequest.type = SLEEP_STATUS_REQUEST_CORRECTION;
+                    strcpy(sendPacketStatusRequest._payload, managerIP.c_str());
+                    monitoringSocket.sendPacket(sendPacketStatusRequest, DIRECT_TO_IP, managerPort, &managerIP);
+                }
+
             }
         }
     }

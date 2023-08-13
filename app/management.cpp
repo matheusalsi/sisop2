@@ -9,7 +9,7 @@
 //      WOLSubsystem::start();
 // }
 
-void TableManager::insertClient(std::string ip, IpInfo ipInfo){
+void TableManager::insertClient(std::string ip, IpInfo ipInfo, bool isManager){
     
     // Acesso à tabela
     tableLock.lock();
@@ -18,6 +18,11 @@ void TableManager::insertClient(std::string ip, IpInfo ipInfo){
     ipStatusTable[ip] = ipInfo;
     knownIps.insert(ip);
     macHostnameMap[ipInfo.hostname] = ipInfo.mac;
+
+    // Se é o gerenciador, atualiza o ip guardado
+    if(isManager){
+        managerIP = ip;
+    }
 
     #ifdef DEBUG_TABLE
     std::clog << "Inserindo cliente de ip " << ip << std::endl;
@@ -135,13 +140,25 @@ std::string TableManager::getMacFromHostname(std::string hostname){
     
     r_str = macHostnameMap[hostname];
 
-    // Libera acesso
-    tableLock.unlock();
+
 
     return r_str;
 
 }
 
+// Obtém IP do gerenciador
+std::string TableManager::getManagerIP(){
+    
+    // Acesso à tabela
+    tableLock.lock();
+
+    auto r_str = managerIP;
+
+    // Libera acesso
+    tableLock.unlock();
+    
+    return r_str;
+}
 
 // void ManagementSS::run(){
 //     // IPs recentemente adicionados e removidos

@@ -96,14 +96,18 @@ void DiscoverySS::run(){
                 std::clog << "Enviando packet de saída..."<< std::endl;
                 #endif
             
-                if (!discoverySocket.sendPacket(sendPacket, DIRECT_TO_IP, DISCOVERY_PORT, &managerIpStr)){
+                // IP do manager armazenado na tabela
+                // Garante que o manager que recebe "EXIT" é o atual (após possíveis eleições)
+                std::string managerIP = tableManager->getManagerIP();
+
+                if (!discoverySocket.sendPacket(sendPacket, DIRECT_TO_IP, DISCOVERY_PORT, &managerIP)){
                     #ifdef DEBUG
                     std::clog << "Não foi possível enviar o pacote de saída" << std::endl;
                     #endif
                 }
 
                 // Espera resposta do servidor               
-                if(!discoverySocket.receivePacket(recvPacket, managerPort, managerIpStr)){
+                if(!discoverySocket.receivePacket(recvPacket, managerPort, managerIP)){
                 // Timeout
                     if(exitTimeoutCount--> 0){
                         continue;
@@ -144,8 +148,10 @@ void DiscoverySS::run(){
                 }
 
                 u_int16_t managerPort; // DISCOVERY_PORT
+                // Ip retornado
+                std::string receivedManagerIPStr;
                 // Espera resposta do servidor/manager        
-                if(!discoverySocket.receivePacket(recvPacket, managerPort, managerIpStr)){
+                if(!discoverySocket.receivePacket(recvPacket, managerPort, receivedManagerIPStr)){
                     continue;
                 }
                 
@@ -163,7 +169,7 @@ void DiscoverySS::run(){
                 macAndHostnameManager = recvPacket._payload;
 
                 // Envia mensagem para o gerenciamento para adicionar o manager à tabela do cliente.
-                prepareAndSendToTable(macAndHostnameManager, managerIpStr);        
+                prepareAndSendToTable(macAndHostnameManager, receivedManagerIPStr);        
                 foundManager = true;
             }
         }
@@ -183,7 +189,10 @@ void DiscoverySS::prepareAndSendToTable(std::string macAndHostname, std::string 
     ipInfo.mac = mac;
     ipInfo.awake = true; // Por default, awake
 
-    tableManager->insertClient(ipStr, ipInfo);      
+    // Se é um cliente, então esse ip é o do manager
+    bool insertingManager = isManager() ? false : true;
+
+    tableManager->insertClient(ipStr, ipInfo, insertingManager);      
 }
 
 std::string DiscoverySS::getHostname(){

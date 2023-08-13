@@ -7,7 +7,7 @@
 #define SLEEP_SERVICE_DISCOVERY_EXIT 0b0010
 
 #define SLEEP_STATUS_REQUEST 0b1000
-#define SLEEP_STATUS_REQUEST_
+#define SLEEP_STATUS_REQUEST_CORRECTION 0b1100
 
 typedef struct packet{
     unsigned short int type; //Tipo do pacote (p.ex. DATA | CMD)

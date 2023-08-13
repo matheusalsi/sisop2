@@ -84,6 +84,11 @@ void InterfaceSS::printInterfaceThread(){
         }
         std::cout << "Última atividade: " << std::ctime(&end_time);
 
+        // Mostra quem é o manager
+        if(!isManager()){
+            std::cout << "IP do manager atual: " << tableManager->getManagerIP() << std::endl; 
+        }
+
         // Obtém tabela
         auto tableString = tableManager->getTablePrintString();
 

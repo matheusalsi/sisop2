@@ -34,14 +34,15 @@ class TableManager{
     std::set<std::string> knownIps;
     // Hostname->Mac, para wakeonlan
     std::map<std::string, std::string> macHostnameMap;
-
+    // O IP do manager
+    std::string managerIP;
 
     // Lock de acesso à tabela principal
     std::mutex tableLock;
 
     public:
     // Adição e remoção de clientes à tabela (DISCOVERY)
-    void insertClient(std::string ip, IpInfo ipInfo);
+    void insertClient(std::string ip, IpInfo ipInfo, bool isManager);
     void removeClient(std::string ip);
     // Atualização do estado de um cliente
     bool updateClient(bool awake, std::string ip);
@@ -51,6 +52,8 @@ class TableManager{
     std::string getTablePrintString();
     // Obtém mac a partir de um hostname
     std::string getMacFromHostname(std::string hostname);
+    // Obtém IP do gerenciador
+    std::string getManagerIP();
 
 };
 
