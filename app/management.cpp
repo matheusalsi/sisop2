@@ -121,8 +121,8 @@ std::string TableManager::getTablePrintString(){
     tableLock.unlock();
 
     // Fim
-    std::cout << std::setfill('-') << std::setw(HOSTNAME_ROW_WIDTH + MACADDRESS_ROW_WIDTH + IPADDRESS_ROW_WIDTH + STATUS_ROW_WIDTH + 9) << '-' << std::endl;
-    std::cout << std::setfill(' ') << std::setw(1);
+    ss << std::setfill('-') << std::setw(HOSTNAME_ROW_WIDTH + MACADDRESS_ROW_WIDTH + IPADDRESS_ROW_WIDTH + STATUS_ROW_WIDTH + 9) << '-' << std::endl;
+    ss << std::setfill(' ') << std::setw(1);
 
 
     return ss.str();
