@@ -62,35 +62,46 @@ void TableManager::backupListenerThread(){
 
         auto firstSep = receivedMessage.find('&');
         auto secondSep = receivedMessage.find('&', firstSep+1);
+        auto thirdSep = receivedMessage.find('&', secondSep+1);
 
-        receivedInfo.hostname   = receivedMessage.substr(0, firstSep);
-        receivedInfo.mac        = receivedMessage.substr(firstSep+1, secondSep);
-        receivedInfo.awake      = (receivedMessage.at(secondSep+1) == 'Y'); // Y/N
+        std::string ip          = receivedMessage.substr(0, firstSep);
+        receivedInfo.hostname   = receivedMessage.substr(firstSep+1, secondSep-firstSep-1);
+        receivedInfo.mac        = receivedMessage.substr(secondSep+1, thirdSep-secondSep-1);
+        receivedInfo.awake      = (receivedMessage.at(thirdSep+1) == 'Y'); // Y/N
         
+        #ifdef LOG_BACKUP
+        std::stringstream logMsg;
+        #endif 
         
         if(recvPacket.type == (BACKUP_MESSAGE | BACKUP_INSERT)){
             #ifdef LOG_BACKUP
-            logger.log("BACKUP: Mensagem de inserção recebida");
+            logMsg << "BACKUP: Mensagem de inserção recebida";
             #endif
-            insertClient(serverIpStr, receivedInfo, false);
+            insertClient(ip, receivedInfo, false);
 
         }
         else if(recvPacket.type == (BACKUP_MESSAGE | BACKUP_REMOVE)){
             #ifdef LOG_BACKUP
-            logger.log("BACKUP: Mensagem de remoção recebida");
+            logMsg << "BACKUP: Mensagem de remoção recebida";
             #endif
-            removeClient(serverIpStr);
+            removeClient(ip);
         }
         else if(recvPacket.type == (BACKUP_MESSAGE | BACKUP_UPDATE)){
             #ifdef LOG_BACKUP
-            logger.log("BACKUP: Mensagem de atualização recebida");
+            logMsg << "BACKUP: Mensagem de atualização recebida";
             #endif
-            updateClient(receivedInfo.awake, serverIpStr);
+            updateClient(receivedInfo.awake, ip);
 
         }
         else{
             continue;
         }
+
+        #ifdef LOG_BACKUP
+        logMsg << " (" << receivedInfo.hostname << " " << receivedInfo.mac << " " << receivedInfo.awake << ")";
+        std::string msg = logMsg.str();
+        logger.log(msg);
+        #endif
 
         // Responde com acknowledge
         packet sendPacket;
@@ -100,7 +111,7 @@ void TableManager::backupListenerThread(){
     }
 }
 
-void TableManager::sendBackupPacketToClients(uint8_t operation, IpInfo& ipInfo){
+void TableManager::sendBackupPacketToClients(uint8_t operation, std::string ip, IpInfo& ipInfo){
     packet sendPacket;
     packet receivePacket;
     uint16_t receivePort;
@@ -109,7 +120,9 @@ void TableManager::sendBackupPacketToClients(uint8_t operation, IpInfo& ipInfo){
     sendPacket.type = (BACKUP_MESSAGE | operation);
     
     std::string packetPayload;
-    // Formato: HOSTNAME&MAC&(Y/N)
+    // Formato: IP&HOSTNAME&MAC&(Y/N)
+    packetPayload.append(ip);
+    packetPayload.append("&");
     packetPayload.append(ipInfo.hostname);
     packetPayload.append("&");
     packetPayload.append(ipInfo.mac);
@@ -137,7 +150,7 @@ void TableManager::sendBackupPacketToClients(uint8_t operation, IpInfo& ipInfo){
 }
 
 
-void TableManager::insertClient(std::string ip, IpInfo ipInfo, bool isManager){
+void TableManager::insertClient(std::string ip, IpInfo ipInfo, bool insertingManager){
     
     // Acesso à tabela
     tableLock.lock();
@@ -148,7 +161,7 @@ void TableManager::insertClient(std::string ip, IpInfo ipInfo, bool isManager){
     macHostnameMap[ipInfo.hostname] = ipInfo.mac;
 
     // Se o cliente adicionado é o gerenciador, atualiza o ip guardado
-    if(isManager){
+    if(insertingManager){
         managerIP = ip;
     }
 
@@ -158,7 +171,10 @@ void TableManager::insertClient(std::string ip, IpInfo ipInfo, bool isManager){
 
     // Atualiza clientes
     if(isManager){
-        sendBackupPacketToClients(BACKUP_INSERT, ipInfo);
+        sendBackupPacketToClients(BACKUP_INSERT, ip, ipInfo);
+        #ifdef LOG_BACKUP
+        logger.log("BACKUP - Mensagem de inserçao enviada");
+        #endif
     }
 
     // Libera acesso
@@ -187,7 +203,10 @@ void TableManager::removeClient(std::string ip){
     // Atualiza clientes
     if(isManager){
         IpInfo ipInfo;
-        sendBackupPacketToClients(BACKUP_REMOVE, ipInfo);
+        sendBackupPacketToClients(BACKUP_REMOVE, ip, ipInfo);
+        #ifdef LOG_BACKUP
+        logger.log("BACKUP - Mensagem de remoçao enviada");
+        #endif
     }
 
     // Libera acesso
@@ -230,7 +249,10 @@ bool TableManager::updateClient(bool awake, std::string ip){
     if(isManager){
         IpInfo ipInfo;
         ipInfo.awake = awake;
-        sendBackupPacketToClients(BACKUP_UPDATE, ipInfo);
+        sendBackupPacketToClients(BACKUP_UPDATE, ip, ipInfo);
+        #ifdef LOG_BACKUP
+        logger.log("BACKUP - Mensagem de atualizaçao enviada");
+        #endif
     }
 
     // Libera acesso

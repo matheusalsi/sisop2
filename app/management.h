@@ -60,7 +60,7 @@ class TableManager{
 
     public:
 
-    TableManager(bool isManagerd);
+    TableManager(bool isManager);
     ~TableManager();
 
     // Define se está em estado de backup 
@@ -71,10 +71,10 @@ class TableManager{
     void backupListenerThread();
 
     // Envia pacote de backup
-    void sendBackupPacketToClients(uint8_t operation, IpInfo& ipInfo);
+    void sendBackupPacketToClients(uint8_t operation, std::string ip, IpInfo& ipInfo);
 
     // Adição e remoção de clientes à tabela (DISCOVERY)
-    void insertClient(std::string ip, IpInfo ipInfo, bool isManager);
+    void insertClient(std::string ip, IpInfo ipInfo, bool insertingManager);
     void removeClient(std::string ip);
     // Atualização do estado de um cliente
     bool updateClient(bool awake, std::string ip);
