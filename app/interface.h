@@ -9,8 +9,9 @@
 #include <iomanip>
 #include <condition_variable>
 #include <regex>
-#include "globals.h"
 #include <pthread.h>
+
+#include "globals.h"
 
 // Subsistema de interface
 class InterfaceSS : public WOLSubsystem{

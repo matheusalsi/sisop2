@@ -30,6 +30,7 @@ TableManager::~TableManager(){
 void TableManager::setBackupStatus(bool isBackup){
     
     if(isBackup != runningBackup){
+        runningBackup = isBackup; // Atualiza antes para garantir que thread sabe do estado atual
         if(isBackup){
             // Começa thread que espera por atualizações
             thrBackupListener = new std::thread(&TableManager::backupListenerThread, this);
@@ -41,7 +42,6 @@ void TableManager::setBackupStatus(bool isBackup){
         }
     }
     
-    runningBackup = isBackup;
 }
 
 void TableManager::backupListenerThread(){
@@ -69,21 +69,21 @@ void TableManager::backupListenerThread(){
         
         
         if(recvPacket.type == (BACKUP_MESSAGE | BACKUP_INSERT)){
-            #ifdef DEBUG
-            std::cout << "BACKUP: Mensagem de inserção recebida" << std::endl;
+            #ifdef LOG_BACKUP
+            logger.log("BACKUP: Mensagem de inserção recebida");
             #endif
             insertClient(serverIpStr, receivedInfo, false);
 
         }
         else if(recvPacket.type == (BACKUP_MESSAGE | BACKUP_REMOVE)){
-            #ifdef DEBUG
-            std::cout << "BACKUP: Mensagem de remoção recebida" << std::endl;
+            #ifdef LOG_BACKUP
+            logger.log("BACKUP: Mensagem de remoção recebida");
             #endif
             removeClient(serverIpStr);
         }
         else if(recvPacket.type == (BACKUP_MESSAGE | BACKUP_UPDATE)){
-            #ifdef DEBUG
-            std::cout << "BACKUP: Mensagem de atualização recebida" << std::endl;
+            #ifdef LOG_BACKUP
+            logger.log("BACKUP: Mensagem de atualização recebida");
             #endif
             updateClient(receivedInfo.awake, serverIpStr);
 

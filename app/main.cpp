@@ -16,6 +16,9 @@ bool g_electionHappening = false;
 // Se um manager já foi encontrado, então esse processo
 // passa a se atentar a eleições
 bool g_foundManager = false;
+// Logger mostrado na interface
+Logger logger;
+
 
 void handleSigint(int signum){
     g_exiting = true;

@@ -133,10 +133,14 @@ void InterfaceSS::printInterfaceThread(){
             // Informações de como realizar input
             std::cout << "Aperte ENTER para entrar no modo de input" << std::endl;
 
+            // Log de mensagens
+            std::cout << "LOGS:" << std::endl;
+            std::cout << logger.getLogsString();
+
         }
 
         // Fim de printing na tela
-        printLock.unlock();
+        printLock.unlock();  
 
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
