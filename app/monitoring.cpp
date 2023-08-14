@@ -3,7 +3,7 @@
 void MonitoringSS::start(){
     monitoringSocket.openSocket();
      
-    monitoringSocket.setSocketTimeoutMS(100);
+    monitoringSocket.setSocketTimeoutMS(MONITORING_TIMEOUT_MS);
 
     if(!isManager()){ // Participante (Servidor)
         monitoringSocket.bindSocket();
@@ -17,7 +17,20 @@ void MonitoringSS::stop(){
 };
 
 void MonitoringSS::run(){
+    // Número de timeouts de espera por pacotes do manager
+    static int nManagerTimeouts = 0;
+
     while (isRunning()) {
+
+        // Lida com eleições
+        if(g_electionHappening){
+
+            continue;
+        }
+
+
+
+
         if(isManager()){ // Cliente - envia os pacotes de sleep status requests
             
             // Obtém IPs da tabela
@@ -65,6 +78,11 @@ void MonitoringSS::run(){
             packetSenderThreadStatus.clear();
         }
         else { // Server - responde os pacotes de sleep status requests
+            
+            // Não faz nada se não existe um manager para responder
+            if(!g_foundManager){
+                continue;
+            }
 
             #ifdef DEBUG
             std::clog << "MONITORING: ";
@@ -78,12 +96,22 @@ void MonitoringSS::run(){
 
             packet sendPacketStatusRequest, recvPacketStatusRequest;
 
+            // Excesso de timeouts leva a nova eleição
+            if(nManagerTimeouts > MAX_MANAGER_MONITORING_TIMEOUTS){
+                g_electionHappening = true;
+                continue;
+            }
+            
             if(!monitoringSocket.receivePacket(recvPacketStatusRequest, managerPort, answeringIP)){
                 #ifdef DEBUG
                 std::clog << "Timeout..." << std::endl;
-                #endif                
+                #endif
+                nManagerTimeouts++;                
                 continue;
             }
+            
+            // Reseta nº de timeouts
+            nManagerTimeouts = 0;
             
             #ifdef DEBUG
             std::clog << "MONITORING: ";

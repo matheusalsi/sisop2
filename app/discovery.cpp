@@ -33,6 +33,13 @@ void DiscoverySS::run(){
     while(isRunning()){
         packet recvPacket, sendPacket;
 
+        // Lida com eleições
+        if(g_electionHappening){
+
+            continue;
+        }
+
+
         if(isManager()){ // Server - os pacotes de sleep service discovery e sleep service exit
             std::string clientIpStr;
             uint16_t clientPort;
@@ -129,7 +136,7 @@ void DiscoverySS::run(){
                 setRunning(false);
                 continue;
             }
-            else if (!foundManager){ // Busca o manager
+            else if (!g_foundManager){ // Busca o manager
                 // Envia pacote
                 packet sendPacket;
 
@@ -170,7 +177,7 @@ void DiscoverySS::run(){
 
                 // Envia mensagem para o gerenciamento para adicionar o manager à tabela do cliente.
                 prepareAndSendToTable(macAndHostnameManager, receivedManagerIPStr);        
-                foundManager = true;
+                g_foundManager = true;
             }
         }
     }

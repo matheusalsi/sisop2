@@ -59,8 +59,28 @@ void InterfaceSS::run(){
 
 }
 
+// Reticências (efeito visual)
+void printWaitingDots(){
+    static uint8_t n_dots = 0;
+    static std::chrono::system_clock::time_point lastUpdate = std::chrono::system_clock::now();
+
+    switch(n_dots){
+        case 1: std::cout << "."; break; 
+        case 2: std::cout << ".."; break; 
+        case 3: std::cout << "..."; break; 
+        case 4: n_dots = 0;
+    }
+
+    if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - lastUpdate).count() <= 1000){
+        return;
+    }
+    lastUpdate = std::chrono::system_clock::now();
+
+    n_dots++;
+}
+
 void InterfaceSS::printInterfaceThread(){
-    
+
     while(isRunning()){
         // Controle do console
         printLock.lock();
@@ -74,28 +94,46 @@ void InterfaceSS::printInterfaceThread(){
         std::system("clear"); // Limpa tela (linux)
         #endif
 
-        auto end = std::chrono::system_clock::now();
-        std::time_t end_time = std::chrono::system_clock::to_time_t(end);
-        if(isManager()){
-            std::cout << "ESTAÇÃO MANAGER" << std::endl;
+        // Caso especial de eleições
+        if(g_electionHappening){
+            std::cout << "Sem respostas do manager (" << tableManager->getManagerIP() << ")" << std::endl;
+            std::cout << "Eleição em progresso";
+            printWaitingDots();
+            std::cout << std::endl;
         }
         else{
-            std::cout << "ESTAÇÃO PARTICIPANTE" << std::endl;
+
+            auto end = std::chrono::system_clock::now();
+            std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+            if(isManager()){
+                std::cout << "ESTAÇÃO MANAGER" << std::endl;
+            }
+            else{
+                std::cout << "ESTAÇÃO PARTICIPANTE" << std::endl;
+            }
+            std::cout << "Última atividade: " << std::ctime(&end_time);
+
+            // Mostra quem é o manager
+            if(!isManager()){
+                if(g_foundManager){
+                    std::cout << "IP do manager atual: " << tableManager->getManagerIP() << std::endl; 
+                }
+                else{
+                    std::cout << "Procurando manager";
+                    printWaitingDots();
+                    std::cout << std::endl;
+                }
+            }
+
+            // Obtém tabela
+            auto tableString = tableManager->getTablePrintString();
+
+            std::cout << tableString;
+
+            // Informações de como realizar input
+            std::cout << "Aperte ENTER para entrar no modo de input" << std::endl;
+
         }
-        std::cout << "Última atividade: " << std::ctime(&end_time);
-
-        // Mostra quem é o manager
-        if(!isManager()){
-            std::cout << "IP do manager atual: " << tableManager->getManagerIP() << std::endl; 
-        }
-
-        // Obtém tabela
-        auto tableString = tableManager->getTablePrintString();
-
-        std::cout << tableString;
-
-        // Informações de como realizar input
-        std::cout << "Aperte ENTER para entrar no modo de input" << std::endl;
 
         // Fim de printing na tela
         printLock.unlock();

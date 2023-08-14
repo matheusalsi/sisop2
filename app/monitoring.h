@@ -10,6 +10,8 @@
 
 #define MONITORING_PORT 7576
 #define IPADDRESS_ROW_WIDTH 15
+#define MONITORING_TIMEOUT_MS 100
+#define MAX_MANAGER_MONITORING_TIMEOUTS 50
 
 // Subsistema de monitoramento
 class MonitoringSS : public WOLSubsystem {

@@ -11,6 +11,11 @@
 
 
 bool g_exiting = false;
+// Controla se há uma eleição ocorrendo
+bool g_electionHappening = false;
+// Se um manager já foi encontrado, então esse processo
+// passa a se atentar a eleições
+bool g_foundManager = false;
 
 void handleSigint(int signum){
     g_exiting = true;

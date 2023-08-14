@@ -16,9 +16,6 @@ class DiscoverySS : public WOLSubsystem{
     std::string hostname;
     std::string macaddress;
 
-    // Específicos para modo "participante" (client)
-    bool foundManager = false;
-
     // Adiciona cliente e manager à tabela
     void prepareAndSendToTable(std::string macAndHostname, std::string ipStr);
 
