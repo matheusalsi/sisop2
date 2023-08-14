@@ -311,6 +311,7 @@ std::string TableManager::getMacFromHostname(std::string hostname){
     
     r_str = macHostnameMap[hostname];
 
+    tableLock.unlock();
 
 
     return r_str;
