@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
         std::clog << "Eu sou um participante" << std::endl;
     #endif
 
-    TableManager tableManager;
+    TableManager tableManager(manager);
 
     DiscoverySS discoverySS(manager, &tableManager);
     MonitoringSS monitoringSS(manager, &tableManager);

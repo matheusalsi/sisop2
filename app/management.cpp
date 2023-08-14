@@ -1,13 +1,141 @@
 #include "management.h"
 
-// void ManagementSS::start(){
+// void TableManager::start(){
 //      WOLSubsystem::start();
 
 // }
 
-// void ManagementSS::stop(){
+// void TableManager::stop(){
 //      WOLSubsystem::start();
 // }
+
+TableManager::TableManager(bool isManager) : backupSocket(MANAGEMENT_PORT) {
+    this->isManager = isManager;
+    
+    backupSocket.openSocket();
+    backupSocket.setSocketTimeoutMS(10);
+    if(!isManager){
+        // Nem sempre vai estar agindo como cliente, mas o bind não dá problema mesmo assim
+        
+        backupSocket.bindSocket();
+        setBackupStatus(true);
+    }
+}
+
+TableManager::~TableManager(){
+    setBackupStatus(false);
+    backupSocket.closeSocket();
+}
+
+void TableManager::setBackupStatus(bool isBackup){
+    
+    if(isBackup != runningBackup){
+        if(isBackup){
+            // Começa thread que espera por atualizações
+            thrBackupListener = new std::thread(&TableManager::backupListenerThread, this);
+        }
+        else{
+            // Finaliza thread de backup
+            thrBackupListener->join();
+            delete thrBackupListener;
+        }
+    }
+    
+    runningBackup = isBackup;
+}
+
+void TableManager::backupListenerThread(){
+    // Encerra thread caso não esteja em modo de backup
+    packet recvPacket;
+    std::string serverIpStr;
+    uint16_t serverPort;
+    
+    std::string receivedMessage;
+    IpInfo receivedInfo;
+    while(runningBackup){
+        
+        if(!backupSocket.receivePacket(recvPacket, serverPort, serverIpStr)){
+            continue;
+        } 
+
+        receivedMessage = recvPacket._payload;
+
+        auto firstSep = receivedMessage.find('&');
+        auto secondSep = receivedMessage.find('&', firstSep+1);
+
+        receivedInfo.hostname   = receivedMessage.substr(0, firstSep);
+        receivedInfo.mac        = receivedMessage.substr(firstSep+1, secondSep);
+        receivedInfo.awake      = (receivedMessage.at(secondSep+1) == 'Y'); // Y/N
+        
+        
+        if(recvPacket.type == (BACKUP_MESSAGE | BACKUP_INSERT)){
+            #ifdef DEBUG
+            std::cout << "BACKUP: Mensagem de inserção recebida" << std::endl;
+            #endif
+            insertClient(serverIpStr, receivedInfo, false);
+
+        }
+        else if(recvPacket.type == (BACKUP_MESSAGE | BACKUP_REMOVE)){
+            #ifdef DEBUG
+            std::cout << "BACKUP: Mensagem de remoção recebida" << std::endl;
+            #endif
+            removeClient(serverIpStr);
+        }
+        else if(recvPacket.type == (BACKUP_MESSAGE | BACKUP_UPDATE)){
+            #ifdef DEBUG
+            std::cout << "BACKUP: Mensagem de atualização recebida" << std::endl;
+            #endif
+            updateClient(receivedInfo.awake, serverIpStr);
+
+        }
+        else{
+            continue;
+        }
+
+        // Responde com acknowledge
+        packet sendPacket;
+        sendPacket.type = recvPacket.type | ACKNOWLEDGE;
+        backupSocket.sendPacket(sendPacket, DIRECT_TO_IP, serverPort, &serverIpStr);
+
+    }
+}
+
+void TableManager::sendBackupPacketToClients(uint8_t operation, IpInfo& ipInfo){
+    packet sendPacket;
+    packet receivePacket;
+    uint16_t receivePort;
+    std::string receiveIP;
+
+    sendPacket.type = (BACKUP_MESSAGE | operation);
+    
+    std::string packetPayload;
+    // Formato: HOSTNAME&MAC&(Y/N)
+    packetPayload.append(ipInfo.hostname);
+    packetPayload.append("&");
+    packetPayload.append(ipInfo.mac);
+    packetPayload.append("&");
+    packetPayload.append(ipInfo.awake ? "Y" : "N");
+    
+    strcpy(sendPacket._payload, packetPayload.c_str()); 
+
+    auto ips = knownIps; // Protegido pelo lock exterior
+    int nTimeouts = 0;
+
+    // Envia a todos os clientes
+    for(auto ip : ips){
+        while(nTimeouts < 10){
+            backupSocket.sendPacket(sendPacket, DIRECT_TO_IP, MANAGEMENT_PORT, &ip);
+            if(backupSocket.receivePacket(receivePacket, receivePort, receiveIP)){
+                if(receivePacket.type == (BACKUP_MESSAGE | operation | ACKNOWLEDGE)){
+                    break;
+                }
+            }
+            nTimeouts++;
+        }
+        nTimeouts = 0;
+    }
+}
+
 
 void TableManager::insertClient(std::string ip, IpInfo ipInfo, bool isManager){
     
@@ -19,7 +147,7 @@ void TableManager::insertClient(std::string ip, IpInfo ipInfo, bool isManager){
     knownIps.insert(ip);
     macHostnameMap[ipInfo.hostname] = ipInfo.mac;
 
-    // Se é o gerenciador, atualiza o ip guardado
+    // Se o cliente adicionado é o gerenciador, atualiza o ip guardado
     if(isManager){
         managerIP = ip;
     }
@@ -28,6 +156,10 @@ void TableManager::insertClient(std::string ip, IpInfo ipInfo, bool isManager){
     std::clog << "Inserindo cliente de ip " << ip << std::endl;
     #endif
 
+    // Atualiza clientes
+    if(isManager){
+        sendBackupPacketToClients(BACKUP_INSERT, ipInfo);
+    }
 
     // Libera acesso
     tableLock.unlock();
@@ -43,10 +175,20 @@ void TableManager::removeClient(std::string ip){
     knownIps.erase(ip);
     ipStatusTable.erase(ip);
 
+    // Se o cliente removido é o gerenciador, atualiza o ip guardado
+    if(managerIP == ip){
+        managerIP = "";
+    }
+
     #ifdef DEBUG_TABLE
     std::clog << "Removendo cliente de ip " << ip << std::endl;
     #endif
 
+    // Atualiza clientes
+    if(isManager){
+        IpInfo ipInfo;
+        sendBackupPacketToClients(BACKUP_REMOVE, ipInfo);
+    }
 
     // Libera acesso
     tableLock.unlock();    
@@ -83,6 +225,13 @@ bool TableManager::updateClient(bool awake, std::string ip){
     #ifdef DEBUG_TABLE
     std::clog << "Atualizando status do cliente de ip " << ip << ": " << (awake ? "AWAKE" : "ASLEEP") << std::endl;
     #endif
+
+    // Atualiza clientes
+    if(isManager){
+        IpInfo ipInfo;
+        ipInfo.awake = awake;
+        sendBackupPacketToClients(BACKUP_UPDATE, ipInfo);
+    }
 
     // Libera acesso
     tableLock.unlock();
@@ -160,7 +309,7 @@ std::string TableManager::getManagerIP(){
     return r_str;
 }
 
-// void ManagementSS::run(){
+// void TableManager::run(){
 //     // IPs recentemente adicionados e removidos
 //     std::vector<std::string> addedIPs;
 //     std::vector<std::string> removedIPs;

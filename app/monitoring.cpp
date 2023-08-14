@@ -126,7 +126,7 @@ void MonitoringSS::run(){
                 if(answeringIP == managerIP){
                     #ifdef DEBUG
                     std::clog << "MONITORING: ";
-                    std::clog << "Estou respondendo o manager " << managerIp << " sobre meu status" << std::endl;
+                    std::clog << "Estou respondendo o manager " << managerIP << " sobre meu status" << std::endl;
                     #endif
                     sendPacketStatusRequest.type = SLEEP_STATUS_REQUEST | ACKNOWLEDGE;
                     monitoringSocket.sendPacket(sendPacketStatusRequest, DIRECT_TO_IP, managerPort, &managerIP);
@@ -137,9 +137,9 @@ void MonitoringSS::run(){
                     // TO-DO: Mandar também a tabela atual
                     #ifdef DEBUG
                     std::clog << "MONITORING: ";
-                    std::clog << "Um possivel manager antigo (" << managerIp << ") esta me monitorando; Irei atualiza-lo" << std::endl;
+                    std::clog << "Um possivel manager antigo (" << managerIP << ") esta me monitorando; Irei atualiza-lo" << std::endl;
                     #endif
-                    sendPacketStatusRequest.type = SLEEP_STATUS_REQUEST_CORRECTION;
+                    sendPacketStatusRequest.type = SLEEP_STATUS_REQUEST | SLEEP_STATUS_REQUEST_CORRECTION;
                     strcpy(sendPacketStatusRequest._payload, managerIP.c_str());
                     monitoringSocket.sendPacket(sendPacketStatusRequest, DIRECT_TO_IP, managerPort, &managerIP);
                 }

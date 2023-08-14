@@ -9,7 +9,12 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <thread>
+
+#include "socket.h"
 #include "globals.h"
+
+#define MANAGEMENT_PORT 27577
 
 //#define DEBUG_TABLE
 
@@ -40,7 +45,33 @@ class TableManager{
     // Lock de acesso à tabela principal
     std::mutex tableLock;
 
+    // Checa se é um backup (ouve por atualizações da tabela do manager)
+    bool runningBackup = false;
+
+    // Socket que ouve e envia mensagens de backup
+    Socket backupSocket;
+
+    // Thread que ouve mensagens de atualização do backup
+    std::thread* thrBackupListener;
+
+    // Checa se o processo é manager
+    bool isManager;
+
     public:
+
+    TableManager(bool isManagerd);
+    ~TableManager();
+
+    // Define se está em estado de backup 
+    void setBackupStatus(bool isBackup);
+
+
+    // Thread que ouve mensagens de atualização da tabela do manager
+    void backupListenerThread();
+
+    // Envia pacote de backup
+    void sendBackupPacketToClients(uint8_t operation, IpInfo& ipInfo);
+
     // Adição e remoção de clientes à tabela (DISCOVERY)
     void insertClient(std::string ip, IpInfo ipInfo, bool isManager);
     void removeClient(std::string ip);
