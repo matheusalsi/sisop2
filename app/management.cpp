@@ -77,7 +77,7 @@ void TableManager::backupListenerThread(){
             #ifdef LOG_BACKUP
             logMsg << "BACKUP: Mensagem de inserção recebida";
             #endif
-            insertClient(ip, receivedInfo, false);
+            insertClient(ip, receivedInfo);
 
         }
         else if(recvPacket.type == (BACKUP_MESSAGE | BACKUP_REMOVE)){
@@ -159,7 +159,7 @@ bool TableManager::sendBackupPacketToClients(uint8_t operation, std::string ip, 
 }
 
 
-void TableManager::insertClient(std::string ip, IpInfo ipInfo, bool insertingManager){
+void TableManager::insertClient(std::string ip, IpInfo ipInfo){
     
     // Acesso à tabela
     tableLock.lock();
@@ -169,10 +169,6 @@ void TableManager::insertClient(std::string ip, IpInfo ipInfo, bool insertingMan
     knownIps.insert(ip);
     macHostnameMap[ipInfo.hostname] = ipInfo.mac;
 
-    // Se o cliente adicionado é o gerenciador, atualiza o ip guardado
-    if(insertingManager){
-        managerIP = ip;
-    }
 
     #ifdef DEBUG_TABLE
     std::clog << "Inserindo cliente de ip " << ip << std::endl;
@@ -343,6 +339,65 @@ std::string TableManager::getManagerIP(){
     
     return r_str;
 }
+
+// Envia a tabela para um IP
+void TableManager::sendTableToIP(std::string sendIp){
+    // Bloqueia acesso à tabela. Precisamos acessar os dados dela até o fim do envio
+    tableLock.lock();
+
+    packet sendPacket;
+    packet receivePacket;
+    uint16_t receivePort;
+    std::string receiveIP;
+
+    sendPacket.type = (BACKUP_MESSAGE | BACKUP_INSERT);
+    
+    std::string packetPayload;
+    IpInfo ipInfo;
+    int nTimeouts;
+
+    // Envia a info de cada PC para o ip
+    for(auto ip : knownIps){
+        // Formato: IP&HOSTNAME&MAC&(Y/N)
+        ipInfo = ipStatusTable[ip];
+        packetPayload.clear();
+        packetPayload.append(ip);
+        packetPayload.append("&");
+        packetPayload.append(ipInfo.hostname);
+        packetPayload.append("&");
+        packetPayload.append(ipInfo.mac);
+        packetPayload.append("&");
+        packetPayload.append(ipInfo.awake ? "Y" : "N");
+        strcpy(sendPacket._payload, packetPayload.c_str()); 
+
+        backupSocket.sendPacket(sendPacket, DIRECT_TO_IP, MANAGEMENT_PORT, &sendIp);
+        // Aguarda acknowledge
+
+        nTimeouts = 0;
+        while(nTimeouts < 10){
+            backupSocket.sendPacket(sendPacket, DIRECT_TO_IP, MANAGEMENT_PORT, &ip);
+            if(backupSocket.receivePacket(receivePacket, receivePort, receiveIP)){
+                if(receivePacket.type == (BACKUP_MESSAGE | BACKUP_INSERT | ACKNOWLEDGE)){
+                    break;
+                }
+            }
+            nTimeouts++;
+        }
+
+        // TO-DO: FAZER ALGO SE HÁ TIMEOUT?
+
+
+    }
+
+    // Libera acesso à tabela
+    tableLock.unlock();
+
+}
+
+void TableManager::setManagerIP(std::string str){
+    managerIP = str;
+}
+
 
 // void TableManager::run(){
 //     // IPs recentemente adicionados e removidos

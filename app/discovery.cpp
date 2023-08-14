@@ -18,7 +18,7 @@ void DiscoverySS::start(){
     ipInfo.mac = getMACAddress();
     ipInfo.awake = true;
 
-    tableManager->insertClient(g_myIP, ipInfo, false);
+    tableManager->insertClient(g_myIP, ipInfo);
 
     WOLSubsystem::start();
 }
@@ -74,12 +74,25 @@ void DiscoverySS::run(){
                 std::clog << "Estou respondendo o cliente " << clientIpStr << " que quer entrar" << std::endl;
                 #endif
                 
-                // Retorna para o cliente pacote informando que este é o manager, com suas informações de hostname e MAC
+                // Retorna para o cliente pacote informando que este é o manager
+                // Não é mais necessário enviar junto a esse packet a informação do manager, pois
+                // a tabela inteira será enviada
                 sendPacket.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND | ACKNOWLEDGE;
-                std::string packetPayload = getHostname() + "&" + getMACAddress();
-                strcpy(sendPacket._payload, packetPayload.c_str());
+                // std::string packetPayload = getHostname() + "&" + getMACAddress();
+                // strcpy(sendPacket._payload, packetPayload.c_str());
 
                 discoverySocket.sendPacket(sendPacket, DIRECT_TO_IP, clientPort, &clientIpStr);
+
+                // Ignora duplicatas
+                if(tableManager->getKnownIps()->count(clientIpStr)){
+                    continue;
+                }
+
+                // Envia toda a tabela para o cliente (replica)
+                std::string logMsg = std::string("Enviando tabela para ") + clientIpStr;
+                logger.log(logMsg);
+                
+                tableManager->sendTableToIP(clientIpStr);
 
                 // Adiciona cliente à tabela
                 // Envia mensagem para o gerenciamento para adicionar o cliente à tabela
@@ -180,13 +193,9 @@ void DiscoverySS::run(){
                 }
                 #endif
 
-                // TO-DO: Duplicado. Ver como resolver isso.  
-                // Adiciona o manager à tabela
-                std::string macAndHostnameManager;
-                macAndHostnameManager = recvPacket._payload;
+                // Notifica que esse IP é o do manager
+                tableManager->setManagerIP(receivedManagerIPStr);
 
-                // Envia mensagem para o gerenciamento para adicionar o manager à tabela do cliente.
-                prepareAndSendToTable(macAndHostnameManager, receivedManagerIPStr);        
                 g_foundManager = true;
             }
         }
@@ -206,10 +215,7 @@ void DiscoverySS::prepareAndSendToTable(std::string macAndHostname, std::string 
     ipInfo.mac = mac;
     ipInfo.awake = true; // Por default, awake
 
-    // Se é um cliente, então esse ip é o do manager
-    bool insertingManager = isManager() ? false : true;
-
-    tableManager->insertClient(ipStr, ipInfo, insertingManager);      
+    tableManager->insertClient(ipStr, ipInfo);      
 }
 
 std::string DiscoverySS::getHostname(){

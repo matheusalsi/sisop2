@@ -88,6 +88,12 @@ void MonitoringSS::run(){
             std::clog << "Estou esperando um packet em " << MONITORING_PORT << std::endl;
             #endif
 
+            // Eleição via timeout de monitoramento só pode ocorrer se já foi encontrado um manager
+            if(!g_foundManager){
+                continue;
+            }
+
+
             // Fica esperando por pacotes do manager, mas pode também
             // receber uma resposta do manager antigo
             std::string answeringIP;

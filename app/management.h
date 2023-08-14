@@ -60,6 +60,7 @@ class TableManager{
 
     public:
 
+
     TableManager(bool isManager);
     ~TableManager();
 
@@ -74,7 +75,7 @@ class TableManager{
     bool sendBackupPacketToClients(uint8_t operation, std::string ip, IpInfo& ipInfo);
 
     // Adição e remoção de clientes à tabela (DISCOVERY)
-    void insertClient(std::string ip, IpInfo ipInfo, bool insertingManager);
+    void insertClient(std::string ip, IpInfo ipInfo);
     void removeClient(std::string ip);
     // Atualização do estado de um cliente
     bool updateClient(bool awake, std::string ip);
@@ -86,6 +87,10 @@ class TableManager{
     std::string getMacFromHostname(std::string hostname);
     // Obtém IP do gerenciador
     std::string getManagerIP();
+    // Envia a tabela para um IP
+    void sendTableToIP(std::string ip);
+    // Define o ip manager
+    void setManagerIP(std::string str);
 
 };
 
