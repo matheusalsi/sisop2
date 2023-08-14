@@ -79,11 +79,6 @@ void MonitoringSS::run(){
         }
         else { // Server - responde os pacotes de sleep status requests
             
-            // Não faz nada se não existe um manager para responder
-            if(!g_foundManager){
-                continue;
-            }
-
             #ifdef DEBUG
             std::clog << "MONITORING: ";
             std::clog << "Estou esperando um packet em " << MONITORING_PORT << std::endl;
