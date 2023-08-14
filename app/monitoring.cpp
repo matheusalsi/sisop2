@@ -36,7 +36,8 @@ void MonitoringSS::run(){
             // Obtém IPs da tabela
             const auto ipList = tableManager->getKnownIps();
             
-            if (ipList->size() == 0) {
+            // Se houver apenas um IP, é ele mesmo
+            if (ipList->size() <= 1) {
                 #ifdef DEBUG
                 std::clog << "MONITORING: ";
                 std::clog << "Não há clientes para monitorar" << std::endl;
@@ -59,6 +60,9 @@ void MonitoringSS::run(){
                 std::clog << "MONITORING: ";
                 std::clog << "Estou enviando status request para o client de ip: " << ip << std::endl;
                 #endif
+                if(ip == g_myIP){
+                    continue;
+                }
                 
                 packetSenderThreadStatus.emplace_back(&MonitoringSS::sendSleepStatusPackets, this, ip);
             }

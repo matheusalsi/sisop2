@@ -111,7 +111,16 @@ void TableManager::backupListenerThread(){
     }
 }
 
-void TableManager::sendBackupPacketToClients(uint8_t operation, std::string ip, IpInfo& ipInfo){
+bool TableManager::sendBackupPacketToClients(uint8_t operation, std::string ip, IpInfo& ipInfo){
+    auto ips = knownIps; // Protegido pelo lock exterior
+    
+    // Não faz nada se só há um IP (o do próprio processo)
+    if(ips.size() <= 1){
+        return false;
+    }
+    
+    int nTimeouts = 0;
+    
     packet sendPacket;
     packet receivePacket;
     uint16_t receivePort;
@@ -131,8 +140,6 @@ void TableManager::sendBackupPacketToClients(uint8_t operation, std::string ip, 
     
     strcpy(sendPacket._payload, packetPayload.c_str()); 
 
-    auto ips = knownIps; // Protegido pelo lock exterior
-    int nTimeouts = 0;
 
     // Envia a todos os clientes
     for(auto ip : ips){
@@ -147,6 +154,8 @@ void TableManager::sendBackupPacketToClients(uint8_t operation, std::string ip, 
         }
         nTimeouts = 0;
     }
+
+    return true;
 }
 
 
@@ -171,10 +180,11 @@ void TableManager::insertClient(std::string ip, IpInfo ipInfo, bool insertingMan
 
     // Atualiza clientes
     if(isManager){
-        sendBackupPacketToClients(BACKUP_INSERT, ip, ipInfo);
-        #ifdef LOG_BACKUP
-        logger.log("BACKUP - Mensagem de inserçao enviada");
-        #endif
+        if(sendBackupPacketToClients(BACKUP_INSERT, ip, ipInfo)){
+            #ifdef LOG_BACKUP
+            logger.log("BACKUP - Mensagem de inserçao enviada");
+            #endif
+        }
     }
 
     // Libera acesso
@@ -203,10 +213,11 @@ void TableManager::removeClient(std::string ip){
     // Atualiza clientes
     if(isManager){
         IpInfo ipInfo;
-        sendBackupPacketToClients(BACKUP_REMOVE, ip, ipInfo);
-        #ifdef LOG_BACKUP
-        logger.log("BACKUP - Mensagem de remoçao enviada");
-        #endif
+        if(sendBackupPacketToClients(BACKUP_REMOVE, ip, ipInfo)){
+            #ifdef LOG_BACKUP
+            logger.log("BACKUP - Mensagem de remoçao enviada");
+            #endif
+        }
     }
 
     // Libera acesso
@@ -249,10 +260,11 @@ bool TableManager::updateClient(bool awake, std::string ip){
     if(isManager){
         IpInfo ipInfo;
         ipInfo.awake = awake;
-        sendBackupPacketToClients(BACKUP_UPDATE, ip, ipInfo);
-        #ifdef LOG_BACKUP
-        logger.log("BACKUP - Mensagem de atualizaçao enviada");
-        #endif
+        if(sendBackupPacketToClients(BACKUP_UPDATE, ip, ipInfo)){
+            #ifdef LOG_BACKUP
+            logger.log("BACKUP - Mensagem de atualizaçao enviada");
+            #endif
+        }
     }
 
     // Libera acesso

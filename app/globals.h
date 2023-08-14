@@ -9,4 +9,6 @@ extern bool g_foundManager;
 
 extern Logger logger;
 
+extern std::string g_myIP;
+
 #endif // __GLOBALS_H__

@@ -71,7 +71,7 @@ class TableManager{
     void backupListenerThread();
 
     // Envia pacote de backup
-    void sendBackupPacketToClients(uint8_t operation, std::string ip, IpInfo& ipInfo);
+    bool sendBackupPacketToClients(uint8_t operation, std::string ip, IpInfo& ipInfo);
 
     // Adição e remoção de clientes à tabela (DISCOVERY)
     void insertClient(std::string ip, IpInfo ipInfo, bool insertingManager);

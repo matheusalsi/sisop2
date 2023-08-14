@@ -19,6 +19,7 @@ bool g_foundManager = false;
 // Logger mostrado na interface
 Logger logger;
 
+std::string g_myIP;
 
 void handleSigint(int signum){
     g_exiting = true;
@@ -40,7 +41,16 @@ int main(int argc, char *argv[])
     
     std::clog << std::ctime(&end_time) << std::endl;
 
+    // Descobre próprio IP
+    int fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+    struct ifreq ifr{};
+    strcpy(ifr.ifr_name, "eth0");
+    ioctl(fd, SIOCGIFADDR, &ifr);
+    close(fd);
+    char ip[INET_ADDRSTRLEN];
+    strcpy(ip, inet_ntoa(((sockaddr_in*) &ifr.ifr_addr)->sin_addr));
 
+    g_myIP = ip;
 
     #ifdef DEBUG
     if(manager)

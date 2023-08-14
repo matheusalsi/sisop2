@@ -10,6 +10,16 @@ void DiscoverySS::start(){
     else{ // Client
         discoverySocket.setSocketBroadcastToTrue(); 
     }
+
+    // Adiciona a si mesmo à tabela (para propagação)
+    
+    IpInfo ipInfo;
+    ipInfo.hostname = getHostname();
+    ipInfo.mac = getMACAddress();
+    ipInfo.awake = true;
+
+    tableManager->insertClient(g_myIP, ipInfo, false);
+
     WOLSubsystem::start();
 }
 
