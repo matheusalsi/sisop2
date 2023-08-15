@@ -170,12 +170,9 @@ void MonitoringSS::sendSleepStatusPackets(std::string ipstr){
     // Manda o pacote de sleepStatus enquanto não recebe confirmação e não há timeOut
     monitoringSocket.sendPacket(sendPacketSleepStatus, DIRECT_TO_IP, MONITORING_PORT, &ipstr);
     
+    // TO-DO: POSSIVELMENTE REMOVER AS THREADS PARA LIDAR COM ESSE PROBLEMA?
     if (monitoringSocket.receivePacket(recvPacketSleepStatus, participantPort, participantIp)){
         if(recvPacketSleepStatus.type == (SLEEP_STATUS_REQUEST | ACKNOWLEDGE)) {
-            #ifdef DEBUG
-            std::clog << "MONITORING: ";
-            std::clog << "Recebi um pacote do cliente com o status awake" << std::endl;
-            #endif
             awake = true;
         } 
     }
@@ -183,5 +180,6 @@ void MonitoringSS::sendSleepStatusPackets(std::string ipstr){
     // Caso tenha timeOut atualiza o status para sleep do contrário atualiza para awake
     std::string message;
 
-    tableManager->updateClient(awake, ipstr);
+    // NÃO NECESSARIAMENTE O IP RESPONDENDO É O QUAL MANDAMOS (PROBLEMA DAS THREADS PEGARAM QUALQUER COISA)
+    tableManager->updateClient(awake, participantIp);
 };
