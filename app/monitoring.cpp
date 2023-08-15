@@ -5,7 +5,7 @@ void MonitoringSS::start(){
      
     monitoringSocket.setSocketTimeoutMS(MONITORING_TIMEOUT_MS);
 
-    if(!isManager()){ // Participante (Servidor)
+    if(!g_isManager){ // Participante (Servidor)
         monitoringSocket.bindSocket();
     }
     WOLSubsystem::start();
@@ -31,7 +31,7 @@ void MonitoringSS::run(){
 
 
 
-        if(isManager()){ // Cliente - envia os pacotes de sleep status requests
+        if(g_isManager){ // Cliente - envia os pacotes de sleep status requests
             
             // Obtém IPs da tabela
             const auto ipList = tableManager->getKnownIps();

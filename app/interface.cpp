@@ -7,7 +7,7 @@
 //     std::cout << "Digite o comando: " << std::endl;
 //     std::cin >> input;
 
-//     if (input == "" && isManager()){ // Fazer aqui o WAKEUP hostname
+//     if (input == "" && g_isManager){ // Fazer aqui o WAKEUP hostname
 //         /* wakeonlan é chamado com: 
 //         std::string wakeonlan = "WAKEONLAN" + mac
 //         system(wakeonlan.c_str())
@@ -15,7 +15,7 @@
 //        ;
 //     }
 //     else if (input == "EXIT"){
-//         if (!isManager()){
+//         if (!g_isManager){
 //             mailBox.writeMessage("D_IN <- I_OUT", input); // Participante avisa para o seu discovery que vai sair
 //             while(mailBox.isEmpty("D_OUT -> I_IN")){ // Manager espera o seu discovery avisar que o participante foi removido da tabela
 //                 std::cout << "Esperando confirmação de saída do meu discovery" << std::endl;; // Espera chegar a confirmação 
@@ -99,13 +99,13 @@ void InterfaceSS::printInterfaceThread(){
             std::cout << "Sem respostas do manager (" << tableManager->getManagerIP() << ")" << std::endl;
             std::cout << "Eleição em progresso";
             printWaitingDots();
-            std::cout << std::endl;
+            std::cout << std::endl << electionLogger.getLogsString();
         }
         else{
 
             auto end = std::chrono::system_clock::now();
             std::time_t end_time = std::chrono::system_clock::to_time_t(end);
-            if(isManager()){
+            if(g_isManager){
                 std::cout << "ESTAÇÃO MANAGER" << std::endl;
             }
             else{
@@ -114,7 +114,7 @@ void InterfaceSS::printInterfaceThread(){
             std::cout << "Última atividade: " << std::ctime(&end_time);
 
             // Mostra quem é o manager
-            if(!isManager()){
+            if(!g_isManager){
                 if(g_foundManager){
                     std::cout << "IP do manager atual: " << tableManager->getManagerIP() << std::endl; 
                 }
@@ -182,7 +182,7 @@ void InterfaceSS::inputThread(){
 
         waitingInput = false;
         
-        if (isManager()){ // Fazer aqui o WAKEUP hostname
+        if (g_isManager){ // Fazer aqui o WAKEUP hostname
             if(std::regex_search(input, match, regex)){
                 
                 validInput = true;
@@ -243,7 +243,7 @@ void InterfaceSS::inputThread(){
     
 //     exiting = true;
     
-//     if (!isManager()){
+//     if (!g_isManager){
 //         hasTableUpdates = true; // Notifica thread the print para exibir mensagem
 //         mailBox.writeMessage("D_IN <- I_OUT", input); // Participante avisa para o seu discovery que vai sair
 //         while(mailBox.isEmpty("D_OUT -> I_IN")){ // Manager espera o seu discovery avisar que o participante foi removido da tabela

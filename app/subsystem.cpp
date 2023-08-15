@@ -8,9 +8,7 @@ WOLSubsystem::~WOLSubsystem(){
     // Lançar exceção caso sistema não tenha sido parado aqui?
 }
 
-bool WOLSubsystem::isManager(){
-    return manager;
-}
+
 
 bool WOLSubsystem::isRunning(){
     return running;

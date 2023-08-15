@@ -44,7 +44,6 @@ class WOLSubsystem{
     public:
     WOLSubsystem(bool isManager, TableManager* tableManager) : manager(isManager), tableManager(tableManager) {};
     ~WOLSubsystem();
-    bool isManager();
     bool isRunning();
     
     virtual void start(); // Inicializa execução do subsistema

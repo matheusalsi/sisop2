@@ -61,7 +61,7 @@ class TableManager{
     public:
 
 
-    TableManager(bool isManager);
+    TableManager();
     ~TableManager();
 
     // Define se está em estado de backup 

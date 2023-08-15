@@ -9,29 +9,78 @@
 #include <linux/if.h>
 #include "globals.h"
 
+#define ELECTION_PORT 27578
+#define MANAGER_SWITCH_PORT 27579
+
 
 bool g_exiting = false;
 // Controla se há uma eleição ocorrendo
 bool g_electionHappening = false;
+// Última resposta a uma eleição
+time_t g_lastElectionResponse = 0;
+
 // Se um manager já foi encontrado, então esse processo
-// passa a se atentar a eleições
+// passa a se atentar a eleições por timeout no monitoramento
 bool g_foundManager = false;
+
+// Decide se o estado atual do processo é manager
+bool g_isManager = false;
+
 // Logger mostrado na interface
 Logger logger;
+// Logger para eleições
+Logger electionLogger;
 
 std::string g_myIP;
+std::string g_myMACAddress;
+std::string g_myHostname;
 
 void handleSigint(int signum){
     g_exiting = true;
 }
 
-bool isManager(int argc){
-    return argc == 2;
+// Verdadeiro se ip1 > ip2
+bool checkIPGreaterThan(std::string ip1, std::string ip2){
+    return (std::stoi(ip1) > std::stoi(ip2));
+}
+
+// Thread que responde a eleições.
+void electionAcknowledgerThread(){
+    Socket electionSocket(ELECTION_PORT);
+    electionSocket.openSocket();
+    electionSocket.setSocketTimeoutMS(100);
+    electionSocket.bindSocket();
+
+    // Pacote de eleição
+    packet packet;
+    uint16_t clientPort;
+    std::string clientIpStr;
+
+    // Para somente com exit enquanto não há eleição
+    while(!g_exiting && !g_electionHappening){
+        // Recebemos um pacote de eleição. Checamos se é uma
+        // resposta à nossa eleição ou uma notificação
+        if(electionSocket.receivePacket(packet, clientPort, clientIpStr)){
+            // Fomos avisados de eleição
+            if(packet.type == (ELECTION_HAPPENING)){
+                // Retorna pacote com ack
+                packet.type |= ACKNOWLEDGE;
+                electionSocket.sendPacket(packet, DIRECT_TO_IP, clientPort, &clientIpStr);
+                // Entra em modo de eleição se já não está
+                g_electionHappening = true;
+            }
+            // Resposta de nossas notificações enviadas da thread principal
+            else if(packet.type == (ELECTION_HAPPENING | ACKNOWLEDGE)){
+                auto cur = std::chrono::system_clock::now();
+                g_lastElectionResponse = std::chrono::system_clock::to_time_t(cur);
+            }
+        }
+    }
+
 }
 
 int main(int argc, char *argv[])
 {
-    bool manager = isManager(argc);
     // Handling de Ctrl+c
     signal(SIGINT, handleSigint);
 
@@ -77,27 +126,90 @@ int main(int argc, char *argv[])
     }
 
 
+    // Começa como cliente
 
-
-    #ifdef DEBUG
-    if(manager)
-        std::clog << "Eu sou o gerente!" << std::endl;
-    else
-        std::clog << "Eu sou um participante" << std::endl;
-    #endif
-
-    TableManager tableManager(manager);
-
-    DiscoverySS discoverySS(manager, &tableManager);
-    MonitoringSS monitoringSS(manager, &tableManager);
-    InterfaceSS interfaceSS(manager, &tableManager);
+    TableManager tableManager; // Backup
+    DiscoverySS discoverySS(false, &tableManager);
+    MonitoringSS monitoringSS(false, &tableManager);
+    InterfaceSS interfaceSS(false, &tableManager);
 
     discoverySS.start();
     monitoringSS.start();
     interfaceSS.start();
 
-    // Espera encerramento do subsistema de descoberta
+    // Socket de envio de eleição
+    Socket electionSenderSocket(ELECTION_PORT);
+    electionSenderSocket.openSocket();
+    // Socket que recebe novo manager
+    Socket managerSwitchSocket(MANAGER_SWITCH_PORT);
+    managerSwitchSocket.openSocket();
+    managerSwitchSocket.bindSocket();
+
+    // Pacote de eleição
+    packet electionPacket;
+    electionPacket.type = ELECTION_HAPPENING;
+
+    // Pacote de novo manager
+    packet newManagerPacket;
+    uint16_t port;
+    std::string newManagerIP;
+
+
+    // Espera por saída
     while(!g_exiting){
+
+        // Se uma eleição está ocorrendo, envia pacotes para todos
+        // PCs com ID maior e espera por respostas.
+        // A thread de eleições irá notificar-nos por meio de uma v.global
+        if(g_electionHappening){
+
+            for(auto ip : *(tableManager.getKnownIps())){
+                if(ip == g_myIP) continue; // Não manda para si mesmo
+                if(checkIPGreaterThan(g_myIP, ip)) continue; // Apenas manda para ips maiores (critério)
+                
+                electionSenderSocket.sendPacket(electionPacket, DIRECT_TO_IP, ELECTION_PORT, &ip); 
+            }
+            electionLogger.log("Pacotes de eleição enviados para todos IDs maiores. Esperando por respostas (0.5 segundos)");
+
+            auto cur = std::chrono::system_clock::now();
+            time_t packetSendEndTime = std::chrono::system_clock::to_time_t(cur);
+
+            // Após envio, espera um tempo para todas mensagens serem processadas
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+            // Checa se a thread servidora de eleições recebeu uma resposta
+            if(packetSendEndTime < g_lastElectionResponse){
+                electionLogger.log("Recebi resposta de 1 ou mais candidatos. Esperando pelo novo manager.");
+                // Espera pelo novo manager. Assumimos que ele não dorme nesse meio tempo
+                // Também assumimos que qualquer packet recebido aqui é válido
+                managerSwitchSocket.receivePacket(newManagerPacket, port, newManagerIP);
+            }
+            else{
+                electionLogger.log("Não recebi nenhuma resposta, logo me proclamarei manager");
+                // Manda um pacote qualquer
+                for(auto ip : *(tableManager.getKnownIps())){
+                    if(ip == g_myIP) continue; // Não manda para si mesmo
+                    managerSwitchSocket.sendPacket(newManagerPacket, DIRECT_TO_IP, ELECTION_PORT, &ip);
+                }
+                electionLogger.log("Todos estão notificados que agora sou o manager");
+
+                // Deixa de ser backup
+                tableManager.setBackupStatus(false);
+
+                // Muda para manager
+                g_isManager = true;
+
+                // Encerra eleição
+                g_electionHappening = false;
+
+                logger.log("Me tornei o novo manager");
+
+            }
+
+        }
+
+
+
 
     }
 

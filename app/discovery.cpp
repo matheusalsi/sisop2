@@ -4,12 +4,8 @@ void DiscoverySS::start(){
     discoverySocket.openSocket();
     discoverySocket.setSocketTimeoutMS(100);
 
-    if(isManager()){ // Server
-        discoverySocket.bindSocket();
-    }
-    else{ // Client
-        discoverySocket.setSocketBroadcastToTrue(); 
-    }
+    discoverySocket.bindSocket();
+    discoverySocket.setSocketBroadcastToTrue(); 
 
     // Adiciona a si mesmo à tabela (para propagação)
     
@@ -24,21 +20,13 @@ void DiscoverySS::start(){
 }
 
 void DiscoverySS::stop(){
-    if(isManager()){
-        WOLSubsystem::stop();
-    }
-    else{
-        // Espera a saída do sistema
-        if(runThread != NULL){
-            runThread->join();
-            delete runThread;
-        }
-    }
+    WOLSubsystem::stop();
     discoverySocket.closeSocket();
 }
 
 void DiscoverySS::run(){
     int exitTimeoutCount = 20; // Máximo de timeouts até desistir de notificar saída
+    int discoveryFindTimeout = 50;
 
     while(isRunning()){
         packet recvPacket, sendPacket;
@@ -50,7 +38,7 @@ void DiscoverySS::run(){
         }
 
 
-        if(isManager()){ // Server - os pacotes de sleep service discovery e sleep service exit
+        if(g_isManager){ // Server - os pacotes de sleep service discovery e sleep service exit
             std::string clientIpStr;
             uint16_t clientPort;
 
@@ -172,9 +160,6 @@ void DiscoverySS::run(){
                 #endif
                 
                 if (!discoverySocket.sendPacket(sendPacket, BROADCAST, DISCOVERY_PORT)){
-                    #ifdef DEBUG
-                    std::clog << "Não foi possível enviar o pacote de procura" << std::endl;
-                    #endif
                 }
 
                 u_int16_t managerPort; // DISCOVERY_PORT
@@ -182,8 +167,14 @@ void DiscoverySS::run(){
                 std::string receivedManagerIPStr;
                 // Espera resposta do servidor/manager        
                 if(!discoverySocket.receivePacket(recvPacket, managerPort, receivedManagerIPStr)){
+                    discoveryFindTimeout--;
+                    // Se houve timeout, tenta eleição
+                    g_electionHappening = true;
+                    electionLogger.log("Timeout em discovery, iniciando eleição.");
+                    discoveryFindTimeout = 0;
                     continue;
                 }
+                discoveryFindTimeout = 0;
                 
                 #ifdef DEBUG
                 // Checa se é resposta do manager
