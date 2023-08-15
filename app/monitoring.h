@@ -25,6 +25,10 @@ class MonitoringSS : public WOLSubsystem {
     // Thread que envia e espera pacotes "Sleep Status Request" 
     void sendSleepStatusPackets(std::string ipstr);
 
+    // Mapa de IPs para seu atual estado; resetado a cada ciclo de monitoring,
+    // e preenchido de acordo com respostas aos pacotes
+    std::map<std::string, bool> awakeStatus;
+
     public:
     void start();
     void stop();

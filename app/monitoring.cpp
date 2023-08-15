@@ -46,6 +46,11 @@ void MonitoringSS::run(){
                 continue;
             }
 
+            // Reseta mapa de acordados
+            for(auto pair : awakeStatus){
+                awakeStatus[pair.first] = false;
+            }
+
             #ifdef DEBUG
             std::clog << "MONITORING: ";
             std::clog << "Estou iniciando threads em " << MONITORING_PORT << std::endl;
@@ -67,8 +72,14 @@ void MonitoringSS::run(){
                 packetSenderThreadStatus.emplace_back(&MonitoringSS::sendSleepStatusPackets, this, ip);
             }
             
+            // Junta threads
             for (auto& packetSenderThreadStatus : packetSenderThreadStatus) {
                 packetSenderThreadStatus.join();
+            }
+
+            // Atualiza tabela de acordo com respostas
+            for(auto pair : awakeStatus){
+                tableManager->updateClient(pair.second, pair.first);
             }
 
             #ifdef DEBUG
@@ -164,22 +175,17 @@ void MonitoringSS::sendSleepStatusPackets(std::string ipstr){
     std::string participantIp;
     uint16_t participantPort;
 
-    bool awake = false;
     sendPacketSleepStatus.type = SLEEP_STATUS_REQUEST;
 
-    // Manda o pacote de sleepStatus enquanto não recebe confirmação e não há timeOut
+    // Manda um pacote sleep status request para esse IP
     monitoringSocket.sendPacket(sendPacketSleepStatus, DIRECT_TO_IP, MONITORING_PORT, &ipstr);
     
-    // TO-DO: POSSIVELMENTE REMOVER AS THREADS PARA LIDAR COM ESSE PROBLEMA?
+    // Pega uma resposta de algum participante, não necessariamente de quem mandamos
     if (monitoringSocket.receivePacket(recvPacketSleepStatus, participantPort, participantIp)){
         if(recvPacketSleepStatus.type == (SLEEP_STATUS_REQUEST | ACKNOWLEDGE)) {
-            awake = true;
+            // Atualizamos esse participante como acordado
+            awakeStatus[participantIp] = true;
         } 
     }
-   
-    // Caso tenha timeOut atualiza o status para sleep do contrário atualiza para awake
-    std::string message;
 
-    // NÃO NECESSARIAMENTE O IP RESPONDENDO É O QUAL MANDAMOS (PROBLEMA DAS THREADS PEGARAM QUALQUER COISA)
-    tableManager->updateClient(awake, participantIp);
 };
