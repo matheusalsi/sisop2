@@ -10,5 +10,7 @@ extern bool g_foundManager;
 extern Logger logger;
 
 extern std::string g_myIP;
+extern std::string g_myMACAddress;
+extern std::string g_myHostname;
 
 #endif // __GLOBALS_H__

@@ -24,9 +24,6 @@ class DiscoverySS : public WOLSubsystem{
     void stop();
     void run();
 
-    std::string getHostname();
-    std::string getMACAddress();
-
     DiscoverySS(bool isManager, TableManager* tableManager) : 
         WOLSubsystem(isManager, tableManager),
         discoverySocket(DISCOVERY_PORT),

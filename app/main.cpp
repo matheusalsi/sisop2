@@ -41,16 +41,43 @@ int main(int argc, char *argv[])
     
     std::clog << std::ctime(&end_time) << std::endl;
 
-    // Descobre próprio IP
+    // Descobre próprio IP, MAC, hostname
+    
     int fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
-    struct ifreq ifr{};
-    strcpy(ifr.ifr_name, "eth0");
-    ioctl(fd, SIOCGIFADDR, &ifr);
+    ifreq iface;
+    strcpy(iface.ifr_name, "eth0");
+    
+    // IP
+    ioctl(fd, SIOCGIFADDR, &iface);
     close(fd);
     char ip[INET_ADDRSTRLEN];
-    strcpy(ip, inet_ntoa(((sockaddr_in*) &ifr.ifr_addr)->sin_addr));
-
+    strcpy(ip, inet_ntoa(((sockaddr_in*) &iface.ifr_addr)->sin_addr));
     g_myIP = ip;
+    
+    // MAC
+    if (ioctl(fd, SIOCGIFHWADDR, &iface) == 0) {
+        char iface_str [18];
+        sprintf(iface_str, "%02x:%02x:%02x:%02x:%02x:%02x",
+                (unsigned char) iface.ifr_addr.sa_data[0],
+                (unsigned char) iface.ifr_addr.sa_data[1],
+                (unsigned char) iface.ifr_addr.sa_data[2],
+                (unsigned char) iface.ifr_addr.sa_data[3],
+                (unsigned char) iface.ifr_addr.sa_data[4],
+                (unsigned char) iface.ifr_addr.sa_data[5]);
+        g_myMACAddress = iface_str;
+    }
+
+    // HOSTNAME
+
+    std::ifstream hostname_file;
+    hostname_file.open("/etc/hostname");
+
+    if(hostname_file.is_open()){
+        getline(hostname_file, g_myHostname); 
+    }
+
+
+
 
     #ifdef DEBUG
     if(manager)

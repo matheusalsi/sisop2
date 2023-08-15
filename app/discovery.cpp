@@ -14,8 +14,8 @@ void DiscoverySS::start(){
     // Adiciona a si mesmo à tabela (para propagação)
     
     IpInfo ipInfo;
-    ipInfo.hostname = getHostname();
-    ipInfo.mac = getMACAddress();
+    ipInfo.hostname = g_myHostname;
+    ipInfo.mac = g_myMACAddress;
     ipInfo.awake = true;
 
     tableManager->insertClient(g_myIP, ipInfo);
@@ -78,7 +78,7 @@ void DiscoverySS::run(){
                 // Não é mais necessário enviar junto a esse packet a informação do manager, pois
                 // a tabela inteira será enviada
                 sendPacket.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND | ACKNOWLEDGE;
-                // std::string packetPayload = getHostname() + "&" + getMACAddress();
+                // std::string packetPayload = g_myHostname + "&" + g_myMAC;
                 // strcpy(sendPacket._payload, packetPayload.c_str());
 
                 discoverySocket.sendPacket(sendPacket, DIRECT_TO_IP, clientPort, &clientIpStr);
@@ -164,7 +164,7 @@ void DiscoverySS::run(){
                 packet sendPacket;
 
                 sendPacket.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND;
-                std::string packetPayload = getHostname() + "&" + getMACAddress();
+                std::string packetPayload = g_myHostname + "&" + g_myMACAddress;
                 strcpy(sendPacket._payload, packetPayload.c_str());                
                 #ifdef DEBUG
                 std::clog << "DISCOVERY: ";
@@ -216,38 +216,4 @@ void DiscoverySS::prepareAndSendToTable(std::string macAndHostname, std::string 
     ipInfo.awake = true; // Por default, awake
 
     tableManager->insertClient(ipStr, ipInfo);      
-}
-
-std::string DiscoverySS::getHostname(){
-    std::string hostname; // String vazia significa que hostname não foi definido
-    std::ifstream hostname_file;
-    hostname_file.open("/etc/hostname");
-
-    if(hostname_file.is_open()){
-        getline(hostname_file, hostname); 
-    }
-    return hostname;
-}
-
-std::string DiscoverySS::getMACAddress(){
-    int sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
-    std::string macaddr_str;
-    ifreq iface;
-
-    if(sockfd >= 0){
-        strcpy(iface.ifr_name, "eth0");
-
-        if (ioctl(sockfd, SIOCGIFHWADDR, &iface) == 0) {
-            char iface_str [18];
-            sprintf(iface_str, "%02x:%02x:%02x:%02x:%02x:%02x",
-                    (unsigned char) iface.ifr_addr.sa_data[0],
-                    (unsigned char) iface.ifr_addr.sa_data[1],
-                    (unsigned char) iface.ifr_addr.sa_data[2],
-                    (unsigned char) iface.ifr_addr.sa_data[3],
-                    (unsigned char) iface.ifr_addr.sa_data[4],
-                    (unsigned char) iface.ifr_addr.sa_data[5]);
-            macaddr_str = iface_str;
-        }
-    }
-    return macaddr_str;
 }
