@@ -21,7 +21,7 @@ Logger logger;
 
 std::string g_myIP;
 
-time_t lastElectionMessage = 0;
+bool electionAnswered;
 
 void handleSigint(int signum){
     g_exiting = true;
@@ -32,7 +32,7 @@ bool isManager(int argc){
 }
 
 bool checkIPGreaterThan(std::string ip1, std::string ip2){
-    return std::stoi(ip1.substr(ip1.find_last_of('.'))) > std::stoi(ip2.substr(ip2.find_last_of('.')));
+    return std::stoi(ip1.substr(ip1.find_last_of('.')+1)) > std::stoi(ip2.substr(ip2.find_last_of('.')+1));
 }
 
 
@@ -50,23 +50,24 @@ void electionAcknowledgerThread(){
     uint16_t clientPort;
     std::string clientIpStr;
 
-    // Para somente com exit enquanto não há eleição
-    while(!g_exiting && !g_electionHappening){
+    // Para somente com exit
+    while(!g_exiting){
         // Recebemos um pacote de eleição. Checamos se é uma
         // resposta à nossa eleição ou uma notificação
         if(electionSocket.receivePacket(packet, clientPort, clientIpStr)){
             // Fomos avisados de eleição
             if(packet.type == (ELECTION_HAPPENING)){
                 // Retorna pacote com ack
-                packet.type |= ACKNOWLEDGE;
-                electionSocket.sendPacket(packet, DIRECT_TO_IP, clientPort, &clientIpStr);
+                logger.log("Respondendo à eleição");
+                packet.type = (ELECTION_HAPPENING | ACKNOWLEDGE);
+                electionSocket.sendPacket(packet, DIRECT_TO_IP, ELECTION_PORT, &clientIpStr);
                 // Entra em modo de eleição se já não está
                 g_electionHappening = true;
             }
             // Resposta de nossas notificações enviadas da thread principal
             else if(packet.type == (ELECTION_HAPPENING | ACKNOWLEDGE)){
-                auto cur = std::chrono::system_clock::now();
-                lastElectionMessage = std::chrono::system_clock::to_time_t(cur);
+                logger.log("Recebi resposta de um candidato");
+                electionAnswered = true;
             }
         }
     }
@@ -110,6 +111,7 @@ int main(int argc, char *argv[])
     MonitoringSS monitoringSS(false, &tableManager);
     InterfaceSS interfaceSS(false, &tableManager);
 
+    std::thread electionThread(&electionAcknowledgerThread);
     discoverySS.start();
     monitoringSS.start();
     interfaceSS.start();
@@ -130,24 +132,24 @@ int main(int argc, char *argv[])
         // A thread de eleições irá notificar-nos por meio de uma v.global
         if(g_electionHappening){
 
+            electionAnswered = false;
+
             for(auto ip : *(tableManager.getKnownIps())){
                 if(ip == g_myIP) continue; // Não manda para si mesmo
                 if(checkIPGreaterThan(g_myIP, ip)) continue; // Apenas manda para ips maiores (critério)
+                logger.log(std::string("ELEIÇÃO: Enviando para ") + ip);
                 
                 electionSenderSocket.sendPacket(electionPacket, DIRECT_TO_IP, ELECTION_PORT, &ip); 
             }
-            logger.log("Pacotes de eleição enviados para todos IDs maiores. Esperando por respostas (0.5 segundos)");
-
-            auto cur = std::chrono::system_clock::now();
-            time_t packetSendEndTime = std::chrono::system_clock::to_time_t(cur);
+            logger.log("Pacotes de eleição enviados para todos IDs maiores. Esperando por respostas (2.0 segundos)");
 
             // Após envio, espera um tempo para todas mensagens serem processadas
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
             bool runAsManager;
 
             // Checa se a thread servidora de eleições recebeu uma resposta
-            if(packetSendEndTime < lastElectionMessage){
+            if(electionAnswered){
                 logger.log("Recebi resposta de 1 ou mais candidatos. Voltando ao modo Discovery");
                 // Se torna backup
                 tableManager.setBackupStatus(true);
@@ -184,6 +186,8 @@ int main(int argc, char *argv[])
     std::cout << "Subsistema MONITORING encerrado..." << std::endl;
     interfaceSS.stop();
     std::cout << "Subsistema INTERFACE encerrado..." << std::endl;
+    
+    electionThread.join();
 
     std::cout << "----- FINALIZADO! -----" << std::endl;
 
