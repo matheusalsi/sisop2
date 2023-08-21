@@ -17,6 +17,7 @@
 #define BACKUP_UPDATE                   0b00100
 
 // Tipos
+#define ELECTION_HAPPENING              0b00000
 #define SLEEP_SERVICE_DISCOVERY         0b01000
 #define SLEEP_STATUS_REQUEST            0b10000
 #define BACKUP_MESSAGE                  0b11000
