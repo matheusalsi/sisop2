@@ -34,8 +34,10 @@ class WOLSubsystem{
     // void setRunning(bool value);
     
     void run(); // Chamada por start, thread principal do subsistema
-    
+
+
     protected:
+    
     std::thread* runThread; // thread principal do SS
     
     // Gerenciador da tabela, com o qual o subsistema se comunica para escritas/leituras
@@ -53,6 +55,7 @@ class WOLSubsystem{
     virtual void runAsManager() = 0;
     virtual void runAsClient() = 0; // Execução de run() como cliente 
 
+    void setManagerStatus(bool isManager);
 };
 
 #endif

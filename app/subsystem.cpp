@@ -48,3 +48,7 @@ void WOLSubsystem::run(){
         }
     }
 }
+
+void WOLSubsystem::setManagerStatus(bool isManager){
+    manager = isManager;
+}

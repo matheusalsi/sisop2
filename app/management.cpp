@@ -9,17 +9,11 @@
 //      WOLSubsystem::start();
 // }
 
-TableManager::TableManager(bool isManager) : backupSocket(MANAGEMENT_PORT) {
-    this->isManager = isManager;
-    
+TableManager::TableManager() : backupSocket(MANAGEMENT_PORT) {
     backupSocket.openSocket();
     backupSocket.setSocketTimeoutMS(10);
-    if(!isManager){
-        // Nem sempre vai estar agindo como cliente, mas o bind não dá problema mesmo assim
-        
-        backupSocket.bindSocket();
-        setBackupStatus(true);
-    }
+    backupSocket.bindSocket();
+    setBackupStatus(true);
 }
 
 TableManager::~TableManager(){
@@ -175,7 +169,7 @@ void TableManager::insertClient(std::string ip, IpInfo ipInfo){
     #endif
 
     // Atualiza clientes
-    if(isManager){
+    if(!runningBackup){
         if(sendBackupPacketToClients(BACKUP_INSERT, ip, ipInfo)){
             #ifdef LOG_BACKUP
             logger.log("BACKUP - Mensagem de inserçao enviada");
@@ -207,7 +201,7 @@ void TableManager::removeClient(std::string ip){
     #endif
 
     // Atualiza clientes
-    if(isManager){
+    if(!runningBackup){
         IpInfo ipInfo;
         if(sendBackupPacketToClients(BACKUP_REMOVE, ip, ipInfo)){
             #ifdef LOG_BACKUP
@@ -253,7 +247,7 @@ bool TableManager::updateClient(bool awake, std::string ip){
     #endif
 
     // Atualiza clientes
-    if(isManager){
+    if(!runningBackup){
         IpInfo ipInfo;
         ipInfo.awake = awake;
         if(sendBackupPacketToClients(BACKUP_UPDATE, ip, ipInfo)){
