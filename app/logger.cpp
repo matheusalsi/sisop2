@@ -1,6 +1,6 @@
 #include "logger.h"
 
-void Logger::log(std::string& str){
+void Logger::log(std::string const& str){
     logLock.lock();
     if(full){
         _log.pop_front();

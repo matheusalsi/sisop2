@@ -17,7 +17,7 @@ class Logger{
     std::mutex logLock;
 
     public:
-    void log(std::string& str);
+    void log(std::string const& str);
     void log(const char* str);
     std::string getLogsString();
 

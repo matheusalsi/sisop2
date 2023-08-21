@@ -91,7 +91,8 @@ class TableManager{
     void sendTableToIP(std::string ip);
     // Define o ip manager
     void setManagerIP(std::string str);
-
+    // Retorna verdadeiro se o cliente está acordado
+    bool isClientAwake(std::string ip);
 };
 
 #endif // __MANAGEMENT_H__

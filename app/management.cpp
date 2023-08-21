@@ -398,6 +398,10 @@ void TableManager::setManagerIP(std::string str){
     managerIP = str;
 }
 
+bool TableManager::isClientAwake(std::string ip){
+    return ipStatusTable[ip].awake;
+}
+
 
 // void TableManager::run(){
 //     // IPs recentemente adicionados e removidos
