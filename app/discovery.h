@@ -22,7 +22,8 @@ class DiscoverySS : public WOLSubsystem{
     public:
     void start();
     void stop();
-    void run();
+    void runAsClient();
+    void runAsManager();
 
     std::string getHostname();
     std::string getMACAddress();

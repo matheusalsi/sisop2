@@ -33,30 +33,28 @@
 void InterfaceSS::start(){
     WOLSubsystem::start();
     waitingInput = false;
+
+    printThread = std::thread(&InterfaceSS::printInterfaceThread, this);
+    inputThread = std::thread(&InterfaceSS::inputHandlerThread, this);
 }
 
 void InterfaceSS::stop(){
     WOLSubsystem::stop();
+    if(waitingInput){
+            // Força terminação da thread de input
+            pthread_cancel(inputThread.native_handle());
+            printLock.unlock();
+    }
+    printThread.join();
+    inputThread.join();
 }
 
+void InterfaceSS::runAsClient(){
+    return;
+}
 
-void InterfaceSS::run(){
-
-    std::thread printThread(&InterfaceSS::printInterfaceThread, this);
-    std::thread inputThread(&InterfaceSS::inputThread, this);
-
-    while(isRunning()){
-
-    }
-
-    if(waitingInput){
-        // Força terminação da thread de input
-        pthread_cancel(inputThread.native_handle());
-        printLock.unlock();
-    }
-    inputThread.join();
-    printThread.join();
-
+void InterfaceSS::runAsManager(){
+    return;
 }
 
 // Reticências (efeito visual)
@@ -147,7 +145,7 @@ void InterfaceSS::printInterfaceThread(){
 
 }
 
-void InterfaceSS::inputThread(){
+void InterfaceSS::inputHandlerThread(){
     std::string input;
     std::regex regex("wakeup (.*)");
     std::smatch match;

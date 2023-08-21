@@ -32,7 +32,8 @@ class MonitoringSS : public WOLSubsystem {
     public:
     void start();
     void stop();
-    void run();
+    void runAsClient();
+    void runAsManager();
 
     MonitoringSS(bool isManager, TableManager* tableManager) :
         WOLSubsystem(isManager, tableManager),

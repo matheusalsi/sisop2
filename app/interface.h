@@ -22,8 +22,10 @@ class InterfaceSS : public WOLSubsystem{
     std::mutex printLock;
 
     // Thread de input
-    void inputThread();
+    std::thread inputThread;
+    void inputHandlerThread();
     // Realiza print
+    std::thread printThread;
     void printInterfaceThread();
     
     
@@ -41,10 +43,8 @@ class InterfaceSS : public WOLSubsystem{
 
     void start();
     void stop();
-    void run();
-
-
-
+    void runAsManager();
+    void runAsClient();
 };
 
 #endif // __INTERFACE_H__

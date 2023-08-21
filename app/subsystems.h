@@ -33,7 +33,7 @@ class WOLSubsystem{
     bool running; // define se o SS está rodando. Caso não esteja, threads devem parar de rodar
     // void setRunning(bool value);
     
-    virtual void run()=0; // Chamada por start, thread principal do subsistema
+    void run(); // Chamada por start, thread principal do subsistema
     
     protected:
     std::thread* runThread; // thread principal do SS
@@ -49,6 +49,9 @@ class WOLSubsystem{
     
     virtual void start(); // Inicializa execução do subsistema
     virtual void stop(); // Encerra execução do subsistema
+
+    virtual void runAsManager() = 0;
+    virtual void runAsClient() = 0; // Execução de run() como cliente 
 
 };
 

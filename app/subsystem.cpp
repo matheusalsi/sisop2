@@ -33,3 +33,18 @@ void WOLSubsystem::stop(){
     }
 
 }
+
+void WOLSubsystem::run(){
+    while(isRunning()){
+        if(g_electionHappening){
+            return;
+        }
+        
+        if(isManager()){
+            runAsManager();
+        }
+        else{
+            runAsClient();
+        }
+    }
+}
