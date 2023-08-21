@@ -21,6 +21,8 @@ Logger logger;
 
 std::string g_myIP;
 
+time_t lastElectionMessage = 0;
+
 void handleSigint(int signum){
     g_exiting = true;
 }
@@ -64,7 +66,7 @@ void electionAcknowledgerThread(){
             // Resposta de nossas notificações enviadas da thread principal
             else if(packet.type == (ELECTION_HAPPENING | ACKNOWLEDGE)){
                 auto cur = std::chrono::system_clock::now();
-                g_lastElectionResponse = std::chrono::system_clock::to_time_t(cur);
+                lastElectionMessage = std::chrono::system_clock::to_time_t(cur);
             }
         }
     }
@@ -75,7 +77,6 @@ void electionAcknowledgerThread(){
 
 int main(int argc, char *argv[])
 {
-    bool manager = isManager(argc);
     // Handling de Ctrl+c
     signal(SIGINT, handleSigint);
 
@@ -103,11 +104,11 @@ int main(int argc, char *argv[])
         std::clog << "Eu sou um participante" << std::endl;
     #endif
 
-    TableManager tableManager(manager);
+    TableManager tableManager;
 
-    DiscoverySS discoverySS(manager, &tableManager);
-    MonitoringSS monitoringSS(manager, &tableManager);
-    InterfaceSS interfaceSS(manager, &tableManager);
+    DiscoverySS discoverySS(false, &tableManager);
+    MonitoringSS monitoringSS(false, &tableManager);
+    InterfaceSS interfaceSS(false, &tableManager);
 
     discoverySS.start();
     monitoringSS.start();
@@ -135,7 +136,7 @@ int main(int argc, char *argv[])
                 
                 electionSenderSocket.sendPacket(electionPacket, DIRECT_TO_IP, ELECTION_PORT, &ip); 
             }
-            electionLogger.log("Pacotes de eleição enviados para todos IDs maiores. Esperando por respostas (0.5 segundos)");
+            logger.log("Pacotes de eleição enviados para todos IDs maiores. Esperando por respostas (0.5 segundos)");
 
             auto cur = std::chrono::system_clock::now();
             time_t packetSendEndTime = std::chrono::system_clock::to_time_t(cur);
@@ -143,26 +144,37 @@ int main(int argc, char *argv[])
             // Após envio, espera um tempo para todas mensagens serem processadas
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
+            bool runAsManager;
+
             // Checa se a thread servidora de eleições recebeu uma resposta
-            if(packetSendEndTime < g_lastElectionResponse){
-                electionLogger.log("Recebi resposta de 1 ou mais candidatos. Voltando ao modo Discovery");
+            if(packetSendEndTime < lastElectionMessage){
+                logger.log("Recebi resposta de 1 ou mais candidatos. Voltando ao modo Discovery");
+                // Se torna backup
+                tableManager.setBackupStatus(true);
+                runAsManager = false;
                 g_foundManager = false;
             }
             else{
-                electionLogger.log("Não recebi nenhuma resposta, logo me proclamarei manager");
+                logger.log("Não recebi nenhuma resposta, logo me proclamarei manager");
                 // Deixa de ser backup
                 tableManager.setBackupStatus(false);
 
                 // Muda para manager
-                g_isManager = true;
+                runAsManager = true;
 
                 logger.log("Me tornei o novo manager");
 
             }
 
+            // Reinicia subsistemas
+            discoverySS.setManagerStatus(runAsManager);
+            monitoringSS.setManagerStatus(runAsManager);
+            interfaceSS.setManagerStatus(runAsManager);
+
             g_electionHappening = false;
 
         }
+    }
 
     std::cout << "Encerrando thread principal..." << std::endl;
 

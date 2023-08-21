@@ -55,13 +55,10 @@ class TableManager{
     // Thread que ouve mensagens de atualização do backup
     std::thread* thrBackupListener;
 
-    // Checa se o processo é manager
-    bool isManager;
-
     public:
 
 
-    TableManager(bool isManager);
+    TableManager();
     ~TableManager();
 
     // Define se está em estado de backup 
