@@ -3,13 +3,8 @@
 void DiscoverySS::start(){
     discoverySocket.openSocket();
     discoverySocket.setSocketTimeoutMS(100);
-
-    if(isManager()){ // Server
-        discoverySocket.bindSocket();
-    }
-    else{ // Client
-        discoverySocket.setSocketBroadcastToTrue(); 
-    }
+    discoverySocket.bindSocket();
+    discoverySocket.setSocketBroadcastToTrue(); 
 
     // Adiciona a si mesmo à tabela (para propagação)
     
@@ -24,16 +19,7 @@ void DiscoverySS::start(){
 }
 
 void DiscoverySS::stop(){
-    if(isManager()){
-        WOLSubsystem::stop();
-    }
-    else{
-        // Espera a saída do sistema
-        if(runThread != NULL){
-            runThread->join();
-            delete runThread;
-        }
-    }
+    WOLSubsystem::stop();
     discoverySocket.closeSocket();
 }
 
@@ -60,11 +46,6 @@ void DiscoverySS::runAsManager(){
         // strcpy(sendPacket._payload, packetPayload.c_str());
 
         discoverySocket.sendPacket(sendPacket, DIRECT_TO_IP, clientPort, &clientIpStr);
-
-        // Ignora duplicatas
-        if(tableManager->getKnownIps()->count(clientIpStr)){
-            return;
-        }
 
         // Envia toda a tabela para o cliente (replica)
         std::string logMsg = std::string("Enviando tabela para ") + clientIpStr;

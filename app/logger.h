@@ -8,7 +8,7 @@
 #include <sstream>
 #include <mutex>
 
-#define LOG_LIMIT 4
+#define LOG_LIMIT 16
 
 class Logger{
 

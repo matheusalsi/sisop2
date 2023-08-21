@@ -55,7 +55,7 @@ class WOLSubsystem{
     virtual void runAsManager() = 0;
     virtual void runAsClient() = 0; // Execução de run() como cliente 
 
-    void setManagerStatus(bool isManager);
+    void setManagerStatus(bool setAsManager);
 };
 
 #endif

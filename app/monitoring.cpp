@@ -2,12 +2,8 @@
 
 void MonitoringSS::start(){
     monitoringSocket.openSocket();
-     
     monitoringSocket.setSocketTimeoutMS(MONITORING_TIMEOUT_MS);
-
-    if(!isManager()){ // Participante (Servidor)
-        monitoringSocket.bindSocket();
-    }
+    monitoringSocket.bindSocket();
     WOLSubsystem::start();
 };
 

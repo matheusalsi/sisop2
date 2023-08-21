@@ -37,7 +37,7 @@ void WOLSubsystem::stop(){
 void WOLSubsystem::run(){
     while(isRunning()){
         if(g_electionHappening){
-            return;
+            continue;
         }
         
         if(isManager()){
@@ -49,6 +49,6 @@ void WOLSubsystem::run(){
     }
 }
 
-void WOLSubsystem::setManagerStatus(bool isManager){
-    manager = isManager;
+void WOLSubsystem::setManagerStatus(bool setAsManager){
+    manager = setAsManager;
 }
