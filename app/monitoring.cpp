@@ -80,7 +80,7 @@ void MonitoringSS::run(){
             // Atualiza tabela de acordo com respostas
             for(auto pair : awakeStatus){
                 // Se descobrimos que o cliente recém acordou, reenviamos a tabela
-                if(tableManager->isClientAwake(pair.first) && !pair.second){
+                if(!tableManager->isClientAwake(pair.first) && pair.second){
                     logger.log(std::string("MONITORING: Reenviando tabela a ") + pair.first);
                     tableManager->sendTableToIP(pair.first);
                 }
