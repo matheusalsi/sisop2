@@ -110,10 +110,19 @@ void DiscoverySS::runAsClient(){
         }
 
         // Espera resposta do servidor
-        discoverySocket.setSocketTimeoutMS(1000);               
-        if(!discoverySocket.receivePacket(recvPacket, managerPort, managerIP)){
-            std::cout << "Não foi possível contatar o manager sobre a saída (excesso de timeouts)" << std::endl;
-        }
+        int nTimeouts = 0;
+        while(isRunning()){
+            // TO-DO: USAR DEFINE
+            if(nTimeouts > 10){
+                std::cout << "Não foi possível contatar o manager sobre a saída (excesso de timeouts)" << std::endl;
+            }
+            if(!discoverySocket.receivePacket(recvPacket, managerPort, managerIP)){
+                nTimeouts++;
+            }
+            else{
+                break;
+            }
+        }             
 
         // Checa se é resposta do manager
         if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_EXIT | ACKNOWLEDGE)){
@@ -126,33 +135,49 @@ void DiscoverySS::runAsClient(){
 
     }
     else if (!g_foundManager){ // Busca o manager
-        // Envia pacote
         packet sendPacket;
-
         sendPacket.type = SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND;
         std::string packetPayload = getHostname() + "&" + getMACAddress();
         strcpy(sendPacket._payload, packetPayload.c_str());                
         
-        if (!discoverySocket.sendPacket(sendPacket, BROADCAST, DISCOVERY_PORT)){
-            logger.log("Não foi possível enviar o pacote de procura");
-            return;
-        }
-
         u_int16_t managerPort; // DISCOVERY_PORT
         // Ip retornado
         std::string receivedManagerIPStr;
-        // Espera resposta do servidor/manager        
-        if(!discoverySocket.receivePacket(recvPacket, managerPort, receivedManagerIPStr)){
-            // Se houve timeout, reenviamos
-            return;
-        }
-        
-        // Checa se é resposta do manager
-        if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND | ACKNOWLEDGE)){
-            logger.log("DISCOVERY: Recebi um pacote do manager de confirmação que eu entrei!");
-            // Notifica que esse IP é o do manager
-            tableManager->setManagerIP(receivedManagerIPStr);
-            g_foundManager = true;
+
+        // Fica tentando enviar o pacote, entrando em modo de eleição se demorar muito
+        int nTimeout = 0;
+        while(isRunning()){
+            // TO-DO: USAR DEFINE
+            if(nTimeout > 20){
+                g_electionHappening = true;
+                return;
+            }
+            
+            if (!discoverySocket.sendPacket(sendPacket, BROADCAST, DISCOVERY_PORT)){
+                logger.log("Não foi possível enviar o pacote de procura");
+                return;
+            }
+            // Loop de respostas, necessário para lidar com o packet que enviamos a nós mesmo no
+            // broadcast
+            while(isRunning()){
+                if(!discoverySocket.receivePacket(recvPacket, managerPort, receivedManagerIPStr)){
+                    nTimeout++;
+                    break; 
+                }
+                // Nosso próprio packet
+                else if(receivedManagerIPStr == g_myIP){
+                    continue;
+                }
+                // Checamos se é o pacote correto
+                else if(recvPacket.type == (SLEEP_SERVICE_DISCOVERY | SLEEP_SERVICE_DISCOVERY_FIND | ACKNOWLEDGE)){
+                    logger.log("DISCOVERY: Recebi um pacote do manager de confirmação que eu entrei!");
+                    // Notifica que esse IP é o do manager
+                    tableManager->setManagerIP(receivedManagerIPStr);
+                    g_foundManager = true;
+                    return;
+                }
+            }
+
         }
 
     }   

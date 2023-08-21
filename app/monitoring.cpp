@@ -80,12 +80,22 @@ void MonitoringSS::runAsClient(){
     u_int16_t managerPort;
     packet sendPacketStatusRequest, recvPacketStatusRequest;
 
-    monitoringSocket.setSocketTimeoutMS(4000);    
-    if(!monitoringSocket.receivePacket(recvPacketStatusRequest, managerPort, answeringIP)){
-        // Excesso de timeouts leva a nova eleição
-        g_electionHappening = true;             
-        return;
-    }
+    int nTimeouts = 0;
+    while(isRunning()){
+        if(nTimeouts == MAX_MANAGER_MONITORING_TIMEOUTS){
+            // Entra em modo eleição
+            g_electionHappening = true;
+            return;
+        }
+        
+        if(!monitoringSocket.receivePacket(recvPacketStatusRequest, managerPort, answeringIP)){
+            nTimeouts++;
+            continue;
+        }
+        else{
+            break;
+        }
+    }    
 
     // Checa se o tipo do pacote está correto e responde
     if(recvPacketStatusRequest.type == SLEEP_STATUS_REQUEST) {
