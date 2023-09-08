@@ -27,8 +27,8 @@ void MonitoringSS::runAsManager(){
     }
 
     // Reseta mapa de acordados
-    for(auto pair : awakeStatus){
-        awakeStatus[pair.first] = false;
+    for(auto ip : *ipList){
+        awakeStatus[ip] = false;
     }
 
     // Threads que fazem envio e resposta de pacotes
@@ -36,6 +36,8 @@ void MonitoringSS::runAsManager(){
     
     for(auto ip: *ipList) {
         if(ip == g_myIP){
+            // Obviamente o próprio manager está acordado
+            awakeStatus[ip] = true;
             continue;
         }
         

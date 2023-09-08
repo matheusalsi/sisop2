@@ -169,11 +169,21 @@ int main(int argc, char *argv[])
             }
 
             // Reinicia subsistemas
+            discoverySS.stop();
+            monitoringSS.stop();
+            interfaceSS.stop();
+            
             discoverySS.setManagerStatus(runAsManager);
             monitoringSS.setManagerStatus(runAsManager);
             interfaceSS.setManagerStatus(runAsManager);
 
             g_electionHappening = false;
+
+            discoverySS.start();
+            monitoringSS.start();
+            interfaceSS.start();
+
+
 
         }
     }
