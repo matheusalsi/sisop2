@@ -1,0 +1,31 @@
+services:
+  alpha:
+    build: .
+    ports:
+      - "8000:27575"
+      - "8001:27576"
+      - "8002:27577"
+      - "8003:27578"
+
+  bravo:
+    build: .
+    ports:
+      - "8004:27575"
+      - "8005:27576"
+      - "8006:27577"
+      - "8007:27578"
+    depends_on:
+      alpha:
+        condition: service_started
+
+  charlie:
+    build: .
+    ports:
+      - "8008:27575"
+      - "8009:27576"
+      - "8010:27577"
+      - "8011:27578"
+
+    depends_on:
+      bravo:
+        condition: service_started

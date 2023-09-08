@@ -8,7 +8,7 @@
 #include <atomic>
 #include <set>
 
-#define MONITORING_PORT 7576
+#define MONITORING_PORT 27576
 #define IPADDRESS_ROW_WIDTH 15
 #define MONITORING_TIMEOUT_MS 100
 #define MAX_MANAGER_MONITORING_TIMEOUTS 100
