@@ -49,6 +49,12 @@ void MonitoringSS::runAsManager(){
         packetSenderThreadStatus.join();
     }
 
+    // Se eleição iniciou aqui (manager antigo), retorna cedo
+    if(g_electionHappening){
+        return;
+    }
+
+
     // Atualiza tabela de acordo com respostas
     for(auto pair : awakeStatus){
         // Se descobrimos que o cliente recém acordou, reenviamos a tabela
@@ -107,8 +113,9 @@ void MonitoringSS::runAsClient(){
         else{
             // Retorna para o servidor pacote confirmando que ele recebeu o pacote de status
             sendPacketStatusRequest.type = SLEEP_STATUS_REQUEST | SLEEP_STATUS_REQUEST_CORRECTION;
-            strcpy(sendPacketStatusRequest._payload, managerIP.c_str());
-            monitoringSocket.sendPacket(sendPacketStatusRequest, DIRECT_TO_IP, managerPort, &managerIP);
+            logger.log("MONITORING - Corrigindo um manager antigo");
+            //strcpy(sendPacketStatusRequest._payload, managerIP.c_str());
+            monitoringSocket.sendPacket(sendPacketStatusRequest, DIRECT_TO_IP, managerPort, &answeringIP);
         }
     }
 }
@@ -129,6 +136,10 @@ void MonitoringSS::sendSleepStatusPackets(std::string ipstr){
         if(recvPacketSleepStatus.type == (SLEEP_STATUS_REQUEST | ACKNOWLEDGE)) {
             // Atualizamos esse participante como acordado
             awakeStatus[participantIp] = true;
+        }
+        else if(recvPacketSleepStatus.type == (SLEEP_STATUS_REQUEST | SLEEP_STATUS_REQUEST_CORRECTION)){
+            // Começa eleição
+            g_electionHappening = true;
         } 
     }
 

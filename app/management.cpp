@@ -54,6 +54,12 @@ void TableManager::backupListenerThread(){
 
         receivedMessage = recvPacket._payload;
 
+        // Manager reacordado estava crashando por causa do at em string vazia.
+        if(receivedMessage.size() == 0){
+            continue;
+        }
+
+
         auto firstSep = receivedMessage.find('&');
         auto secondSep = receivedMessage.find('&', firstSep+1);
         auto thirdSep = receivedMessage.find('&', secondSep+1);

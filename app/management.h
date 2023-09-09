@@ -17,7 +17,7 @@
 #define MANAGEMENT_PORT 27577
 
 //#define DEBUG_TABLE
-#define LOG_BACKUP
+//#define LOG_BACKUP
 
 #define HOSTNAME_ROW_WIDTH 20
 #define MACADDRESS_ROW_WIDTH 17
