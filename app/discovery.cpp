@@ -70,8 +70,7 @@ void DiscoverySS::runAsManager(){
 
 void DiscoverySS::runAsClient(){
     std::string clientIpStr;
-    uint16_t clientPort;
-    packet recvPacket, sendPacket;
+    packet recvPacket;
 
     if(g_exiting){ // Verifica se é necessário mandar packet informando saída do sistema
         // O cliente já sabe qual o endereço do servidor

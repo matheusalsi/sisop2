@@ -52,6 +52,7 @@ void TableManager::backupListenerThread(){
             continue;
         } 
 
+
         receivedMessage = recvPacket._payload;
 
         // Manager reacordado estava crashando por causa do at em string vazia.
@@ -395,7 +396,9 @@ void TableManager::sendTableToIP(std::string sendIp){
 }
 
 void TableManager::setManagerIP(std::string str){
+    tableLock.lock();
     managerIP = str;
+    tableLock.unlock();
 }
 
 bool TableManager::isClientAwake(std::string ip){

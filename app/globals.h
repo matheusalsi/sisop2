@@ -6,6 +6,7 @@
 extern bool g_exiting;
 extern bool g_electionHappening;
 extern bool g_foundManager;
+extern bool g_becomeParticipant;
 
 extern Logger logger;
 

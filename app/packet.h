@@ -21,6 +21,7 @@
 #define SLEEP_SERVICE_DISCOVERY         0b01000
 #define SLEEP_STATUS_REQUEST            0b10000
 #define BACKUP_MESSAGE                  0b11000
+#define NEW_MANAGER                     0b11001
 
 
 

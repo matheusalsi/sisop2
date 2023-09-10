@@ -16,12 +16,18 @@ bool g_electionHappening = false;
 // Se um manager já foi encontrado, então esse processo
 // passa a se atentar a eleições
 bool g_foundManager = false;
+// Variável utilizada para controlar caso o manager antigo acorde
+bool g_becomeParticipant = false;
+
 // Logger mostrado na interface
 Logger logger;
 
 std::string g_myIP;
 
+// Controla se algum candidato com ID maior respondeu a eleição
 bool electionAnswered;
+// Controla se o novo manager mandou a mensagem avisando que ele foi eleito 
+bool newManagerMessaged;
 
 void handleSigint(int signum){
     g_exiting = true;
@@ -39,7 +45,7 @@ bool checkIPGreaterThan(std::string ip1, std::string ip2){
 #define ELECTION_PORT 27578
 
 // Thread que responde a eleições.
-void electionAcknowledgerThread(){
+void electionAcknowledgerThread(TableManager& tableManager){
     Socket electionSocket(ELECTION_PORT);
     electionSocket.openSocket();
     electionSocket.setSocketTimeoutMS(100);
@@ -69,6 +75,12 @@ void electionAcknowledgerThread(){
                 logger.log("Recebi resposta de um candidato");
                 electionAnswered = true;
             }
+            else if(packet.type == NEW_MANAGER){
+                tableManager.setManagerIP(clientIpStr);
+                newManagerMessaged = true;
+                logger.log(std::string("Meu novo manager é - ") + clientIpStr);
+            }
+
         }
     }
 
@@ -111,7 +123,7 @@ int main(int argc, char *argv[])
     MonitoringSS monitoringSS(false, &tableManager);
     InterfaceSS interfaceSS(false, &tableManager);
 
-    std::thread electionThread(&electionAcknowledgerThread);
+    std::thread electionThread(&electionAcknowledgerThread, std::ref(tableManager));
     discoverySS.start();
     monitoringSS.start();
     interfaceSS.start();
@@ -126,16 +138,27 @@ int main(int argc, char *argv[])
 
     // Espera por saída
     while(!g_exiting){
-
+        // Manager recebeu um aviso de que ele deve virar participante 
+        if (g_becomeParticipant){
+            tableManager.setBackupStatus(true);
+            discoverySS.setManagerStatus(false);
+            monitoringSS.setManagerStatus(false);
+            interfaceSS.setManagerStatus(false);
+            
+            g_becomeParticipant = false;
+            g_electionHappening = false;
+            g_foundManager = true;
+        }
         // Se uma eleição está ocorrendo, envia pacotes para todos
         // PCs com ID maior e espera por respostas.
         // A thread de eleições irá notificar-nos por meio de uma v.global
         if(g_electionHappening){
 
             electionAnswered = false;
+            newManagerMessaged = false;
 
             for(auto ip : *(tableManager.getKnownIps())){
-                if(ip == g_myIP) continue; // Não manda para si mesmo
+                if(ip == g_myIP ) continue; // Não manda para si mesmo
                 if(checkIPGreaterThan(g_myIP, ip)) continue; // Apenas manda para ips maiores (critério)
                 logger.log(std::string("ELEIÇÃO: Enviando para ") + ip);
                 
@@ -150,11 +173,14 @@ int main(int argc, char *argv[])
 
             // Checa se a thread servidora de eleições recebeu uma resposta
             if(electionAnswered){
-                logger.log("Recebi resposta de 1 ou mais candidatos. Voltando ao modo Discovery");
+                logger.log("Recebi resposta de 1 ou mais candidatos. Esperando a resposta do manager novo");
                 // Se torna backup
                 tableManager.setBackupStatus(true);
                 runAsManager = false;
-                g_foundManager = false;
+                // Espera a mensagem do manager 
+                while (!newManagerMessaged){
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                }
             }
             else{
                 logger.log("Não recebi nenhuma resposta, logo me proclamarei manager");
@@ -166,26 +192,26 @@ int main(int argc, char *argv[])
 
                 logger.log("Me tornei o novo manager");
 
+                // Envia mensagem para os participantes informando que ele é o novo manager
+                packet newManagerPacket;
+
+                newManagerPacket.type = NEW_MANAGER;
+                for(auto ip : *(tableManager.getKnownIps())){
+                if(ip == g_myIP) continue; // Não manda para si mesmo
+                logger.log(std::string("Enviando para os participantes que eu sou o novo manager - ") + ip);
+                
+                electionSenderSocket.sendPacket(newManagerPacket, DIRECT_TO_IP, ELECTION_PORT, &ip); 
             }
 
-            // Reinicia subsistemas
-            discoverySS.stop();
-                        monitoringSS.stop();
-                        interfaceSS.stop();
-                        
+            }
+            
             discoverySS.setManagerStatus(runAsManager);
             monitoringSS.setManagerStatus(runAsManager);
             interfaceSS.setManagerStatus(runAsManager);
 
             g_electionHappening = false;
-
-            discoverySS.start();
-                        monitoringSS.start();
-                        interfaceSS.start();
-            
-
-
         }
+        
     }
 
     std::cout << "Encerrando thread principal..." << std::endl;
