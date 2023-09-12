@@ -138,8 +138,7 @@ void MonitoringSS::sendSleepStatusPackets(std::string ipstr){
             awakeStatus[participantIp] = true;
         }
         else if(recvPacketSleepStatus.type == (SLEEP_STATUS_REQUEST | SLEEP_STATUS_REQUEST_CORRECTION)){
-            // Começa eleição
-            // g_electionHappening = true;
+            // Tornamo-nos participante
             g_becomeParticipant = true;
         } 
     }

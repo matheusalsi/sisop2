@@ -90,6 +90,8 @@ class TableManager{
     void setManagerIP(std::string str);
     // Retorna verdadeiro se o cliente está acordado
     bool isClientAwake(std::string ip);
+    // Reset dos valores da tabela
+    void reset();
 };
 
 #endif // __MANAGEMENT_H__

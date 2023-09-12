@@ -36,7 +36,7 @@ void WOLSubsystem::stop(){
 
 void WOLSubsystem::run(){
     while(isRunning()){
-        if(g_electionHappening){
+        if(g_electionHappening || g_becomeParticipant){
             continue;
         }
         

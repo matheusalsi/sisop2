@@ -145,9 +145,14 @@ int main(int argc, char *argv[])
             monitoringSS.setManagerStatus(false);
             interfaceSS.setManagerStatus(false);
             
+            // Discovery irá tentar descobrir o novo manager, fazendo com que ele
+            // nos envie a tabela novamente
+            g_foundManager = false;
+
+            // Subsistemas podem voltar à execução normal
             g_becomeParticipant = false;
             g_electionHappening = false;
-            g_foundManager = true;
+            
         }
         // Se uma eleição está ocorrendo, envia pacotes para todos
         // PCs com ID maior e espera por respostas.

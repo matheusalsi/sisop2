@@ -94,6 +94,14 @@ void TableManager::backupListenerThread(){
             updateClient(receivedInfo.awake, ip);
 
         }
+        else if(recvPacket.type == (BACKUP_MESSAGE | BACKUP_RESET)){
+            #ifdef LOG_BACKUP
+            logMsg << "BACKUP: Mensagem de reset recebida";
+            #endif
+            reset();
+
+        }
+
         else{
             continue;
         }
@@ -351,13 +359,17 @@ void TableManager::sendTableToIP(std::string sendIp){
     uint16_t receivePort;
     std::string receiveIP;
 
-    sendPacket.type = (BACKUP_MESSAGE | BACKUP_INSERT);
     
     std::string packetPayload;
     IpInfo ipInfo;
     int nTimeouts;
 
+    // Envia um pacote pedindo que o participante resete a tabela
+    sendPacket.type = (BACKUP_MESSAGE | BACKUP_RESET);
+    backupSocket.sendPacket(sendPacket, DIRECT_TO_IP, MANAGEMENT_PORT, &sendIp);
+
     // Envia a info de cada PC para o ip
+    sendPacket.type = (BACKUP_MESSAGE | BACKUP_INSERT);
     for(auto ip : knownIps){
         // Formato: IP&HOSTNAME&MAC&(Y/N)
         ipInfo = ipStatusTable[ip];
@@ -403,6 +415,14 @@ void TableManager::setManagerIP(std::string str){
 
 bool TableManager::isClientAwake(std::string ip){
     return ipStatusTable[ip].awake;
+}
+
+void TableManager::reset(){
+    tableLock.lock();
+    ipStatusTable.clear();
+    knownIps.clear();
+    macHostnameMap.clear();
+    tableLock.unlock();
 }
 
 

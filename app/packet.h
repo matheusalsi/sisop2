@@ -15,6 +15,7 @@
 #define BACKUP_INSERT                   0b00000
 #define BACKUP_REMOVE                   0b00010
 #define BACKUP_UPDATE                   0b00100
+#define BACKUP_RESET                    0b00101
 
 // Tipos
 #define ELECTION_HAPPENING              0b00000
